@@ -32,7 +32,30 @@ const DEFAULT_PREFS = {
   quickBarPos: null,
   railPos: null,
   activityRange: { mode: 'today', from: '', to: '', grain: 'day', timeMode: 'busy' },
+  activityScope: { workspaces: [], sessions: [] },
 };
+
+/** Statistics can be narrowed to picked workspaces and/or sessions. */
+function normalizeScopeList(value, limit) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  for (const item of value) {
+    if (typeof item !== 'string') continue;
+    const name = item.trim();
+    if (name === '' || out.includes(name)) continue;
+    out.push(name);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+function normalizeActivityScope(value) {
+  const source = isRecord(value) ? value : {};
+  return {
+    workspaces: normalizeScopeList(source.workspaces, 60),
+    sessions: normalizeScopeList(source.sessions, 400),
+  };
+}
 
 /**
  * The statistics page keeps its own window: a preset (today / day / week /
@@ -77,6 +100,7 @@ function loadPrefs() {
   const prefs = { ...DEFAULT_PREFS, ...(isRecord(value) ? value : {}) };
   if (!CARD_TEXTURE_VALUES.has(prefs.cardTexture)) prefs.cardTexture = DEFAULT_PREFS.cardTexture;
   prefs.activityRange = normalizeActivityRange(prefs.activityRange);
+  prefs.activityScope = normalizeActivityScope(prefs.activityScope);
   return prefs;
 }
 
@@ -237,6 +261,8 @@ export class RadarController {
       workspaceRange: this.prefs.defaultRange || '7d',
       workspaceFocus: null,
       workspaceFocusAt: 0,
+      statisticsFocus: null,
+      statisticsFocusAt: 0,
       prefsOpen: false,
       bulk: { status: 'idle', action: null, message: '', error: '', ids: [] },
     };
@@ -794,6 +820,27 @@ export class RadarController {
     }
   }
 
+  /** Narrow the statistics page to picked workspaces and/or sessions. */
+  setActivityScope(scope) {
+    this.setPref('activityScope', normalizeActivityScope(scope));
+  }
+
+  clearActivityScope() {
+    this.setActivityScope({ workspaces: [], sessions: [] });
+  }
+
+  /**
+   * Jump to the statistics page showing only one workspace. Used by the
+   * workspace board so a card can hand its sessions over to the stats.
+   */
+  showStatisticsFor(scope) {
+    this.setActivityScope(scope);
+    this.ui.statisticsFocus = isRecord(scope) ? normalizeActivityScope(scope) : null;
+    this.ui.statisticsFocusAt = Date.now();
+    this.ui.prefsOpen = false;
+    this.publish();
+  }
+
   async archiveSessions(ids, options = {}) {
     const unique = [...new Set((Array.isArray(ids) ? ids : []).filter(id => typeof id === 'string' && id !== ''))];
     if (unique.length === 0) return false;
@@ -1191,6 +1238,7 @@ export class RadarController {
     if (key === 'defaultRange' && !['today', '7d', '30d', 'all'].includes(String(value))) return;
     if (key === 'cardTexture' && !CARD_TEXTURE_VALUES.has(String(value))) return;
     if (key === 'activityRange') value = normalizeActivityRange(value);
+    if (key === 'activityScope') value = normalizeActivityScope(value);
     if (key === 'quickBarPos' || key === 'railPos') {
       const pos = isRecord(value) ? value : null;
       value = pos && Number.isFinite(Number(pos.x)) && Number.isFinite(Number(pos.y))
@@ -1427,6 +1475,7 @@ export class RadarController {
       archivedEntries,
       counts,
       activity: this.activity.days,
+      activityTurns: this.activity.turns,
       ui: { ...this.ui, filters: { ...this.ui.filters }, searchResults: this.ui.searchResults.slice(), bulk: { ...this.ui.bulk } },
       currentId: this.currentMainId() || null,
       prefs: { ...this.prefs },

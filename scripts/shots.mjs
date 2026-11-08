@@ -36,6 +36,17 @@ const SHOTS = [
     ],
   },
   { name: 'statistics', query: 'mode=activity', width: 1320, height: 2100 },
+  {
+    name: 'statistics-scope',
+    query: 'mode=activity',
+    width: 1320,
+    height: 1200,
+    steps: [
+      "(function(){var c=document.querySelectorAll('.dsr-scope__chip');if(c.length>1)c[1].click();})()",
+      "(function(){var b=Array.from(document.querySelectorAll('.dsr-scope-panel .dsr-button')).find(function(x){return x.textContent.indexOf('选择会话')>=0;});if(b)b.click();})()",
+      "(function(){var el=document.querySelector('.dsr-activity');if(el)window.scrollTo(0,0);})()",
+    ],
+  },
   { name: 'workspaces', query: 'mode=workspaces', width: 1440, height: 940 },
 ];
 

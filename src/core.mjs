@@ -1131,34 +1131,63 @@ function sumModelTokens(models) {
   return sumModelCounts(models);
 }
 
-function absorbActivityRecord(bucket, raw) {
+function emptySessionEntry() {
+  return { title: '', tokens: 0, durationMs: 0, busyMs: 0, turns: 0, calls: 0, models: {}, modelTokens: {}, spans: [] };
+}
+
+/**
+ * Fold one ledger record into a bucket. A scope (set of session ids) narrows
+ * every counter to the picked sessions, so the page can answer "only these
+ * sessions / this workspace" without a second aggregation path.
+ */
+function absorbActivityRecord(bucket, raw, scope = null) {
   if (!isRecord(raw)) return;
-  bucket.tokens += Math.max(0, Number(raw.tokens) || 0);
-  bucket.durationMs += Math.max(0, Number(raw.durationMs) || 0);
-  // Spans are merged, never summed: the bucket reports wall-clock coverage.
-  if (Array.isArray(raw.spans) && raw.spans.length > 0) {
-    bucket.spans = mergeSpans(bucket.spans.concat(raw.spans), bucket.start, bucket.end);
-  }
-  bucket.turns += Math.max(0, Number(raw.turns) || 0);
-  bucket.calls += Math.max(0, Number(raw.calls) || 0);
-  mergeModelCounts(bucket.models, raw.models);
-  mergeModelTokens(bucket.modelTokens, raw.modelTokens);
+  const scoped = scope instanceof Set;
   const records = isRecord(raw.sessions) ? raw.sessions : {};
+  if (!scoped) {
+    bucket.tokens += Math.max(0, Number(raw.tokens) || 0);
+    bucket.durationMs += Math.max(0, Number(raw.durationMs) || 0);
+    // Spans are merged, never summed: the bucket reports wall-clock coverage.
+    if (Array.isArray(raw.spans) && raw.spans.length > 0) {
+      bucket.spans = mergeSpans(bucket.spans.concat(raw.spans), bucket.start, bucket.end);
+    }
+    bucket.turns += Math.max(0, Number(raw.turns) || 0);
+    bucket.calls += Math.max(0, Number(raw.calls) || 0);
+    mergeModelCounts(bucket.models, raw.models);
+    mergeModelTokens(bucket.modelTokens, raw.modelTokens);
+  }
   for (const [id, session] of Object.entries(records)) {
     if (!isRecord(session)) continue;
-    const item = bucket.sessions[id] || { title: '', tokens: 0, durationMs: 0, busyMs: 0, turns: 0, calls: 0, models: {}, modelTokens: {}, spans: [] };
+    if (scoped && !scope.has(id)) continue;
+    const item = bucket.sessions[id] || emptySessionEntry();
     item.title = item.title || String(session.title || id);
-    item.tokens += Math.max(0, Number(session.tokens) || 0);
-    item.durationMs += Math.max(0, Number(session.durationMs) || 0);
-    if (Array.isArray(session.spans) && session.spans.length > 0) {
-      item.spans = mergeSpans(item.spans.concat(session.spans), bucket.start, bucket.end);
+    const tokens = Math.max(0, Number(session.tokens) || 0);
+    const durationMs = Math.max(0, Number(session.durationMs) || 0);
+    const turns = Math.max(0, Number(session.turns) || 0);
+    const calls = Math.max(0, Number(session.calls) || 0);
+    const spans = Array.isArray(session.spans) ? session.spans : [];
+    item.tokens += tokens;
+    item.durationMs += durationMs;
+    if (spans.length > 0) {
+      item.spans = mergeSpans(item.spans.concat(spans), bucket.start, bucket.end);
     }
-    item.turns += Math.max(0, Number(session.turns) || 0);
-    item.calls += Math.max(0, Number(session.calls) || 0);
+    item.turns += turns;
+    item.calls += calls;
     mergeModelCounts(item.models, session.models);
     mergeModelTokens(item.modelTokens, session.modelTokens);
     item.calls = Math.max(item.calls, sumModelCounts(item.models));
     bucket.sessions[id] = item;
+    if (scoped) {
+      // The record header mixes every session, so scoped totals come from the
+      // session rows themselves.
+      bucket.tokens += tokens;
+      bucket.durationMs += durationMs;
+      bucket.turns += turns;
+      bucket.calls += calls;
+      if (spans.length > 0) bucket.spans = mergeSpans(bucket.spans.concat(spans), bucket.start, bucket.end);
+      mergeModelCounts(bucket.models, session.models);
+      mergeModelTokens(bucket.modelTokens, session.modelTokens);
+    }
   }
   if (Object.keys(bucket.models).length === 0) {
     for (const session of Object.values(bucket.sessions)) mergeModelCounts(bucket.models, session.models);
@@ -1168,6 +1197,124 @@ function absorbActivityRecord(bucket, raw) {
   }
   bucket.calls = Math.max(bucket.calls, sumModelCounts(bucket.models));
   bucket.sessionCount = Object.keys(bucket.sessions).length;
+}
+
+/** Index of the bucket holding a timestamp, or -1 when it falls outside. */
+function bucketIndexAt(buckets, time) {
+  let low = 0;
+  let high = buckets.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    const bucket = buckets[mid];
+    if (time < bucket.start) high = mid - 1;
+    else if (time >= bucket.end) low = mid + 1;
+    else return mid;
+  }
+  return -1;
+}
+
+function activityDeltaFor(map, index) {
+  let entry = map.get(index);
+  if (entry === undefined) {
+    entry = { tokens: 0, sessions: new Map(), models: {}, modelTokens: {} };
+    map.set(index, entry);
+  }
+  return entry;
+}
+
+function activitySessionDeltaFor(entry, id) {
+  let session = entry.sessions.get(id);
+  if (session === undefined) {
+    session = { title: '', tokens: 0, models: {}, modelTokens: {} };
+    entry.sessions.set(id, session);
+  }
+  return session;
+}
+
+/**
+ * Turns are credited to the bucket their start fell in, which is wrong for a
+ * turn that ran across midnight or past the edge of the picked window: the
+ * whole spend shows up on one side. Here each turn's tokens are spread over
+ * the buckets its wall-clock span covers, and the part that happened outside
+ * the window is dropped, so the page reports "what was spent inside the range"
+ * rather than "what the session spent in total".
+ *
+ * Returns true when at least one turn needed correction.
+ */
+function spreadTurnTokens(buckets, turns, scope = null) {
+  if (buckets.length === 0 || !isRecord(turns)) return false;
+  const delta = new Map();
+  let touched = false;
+  for (const state of Object.values(turns)) {
+    if (!isRecord(state)) continue;
+    const id = String(state.sessionId || '');
+    if (id === '') continue;
+    if (scope instanceof Set && !scope.has(id)) continue;
+    const total = Math.max(0, Number(state.tokens) || 0);
+    const modelTokens = isRecord(state.modelTokens) ? state.modelTokens : {};
+    const modelTotal = sumModelTokens(modelTokens);
+    if (total <= 0 && modelTotal <= 0) continue;
+    const start = Math.max(0, Number(state.startedAt) || 0);
+    if (start <= 0) continue;
+    const length = Math.max(0, Number(state.durationMs) || 0);
+    if (length <= 0) continue;
+    const end = start + length;
+    if (end <= buckets[0].start || start >= buckets[buckets.length - 1].end) continue;
+    const startIndex = bucketIndexAt(buckets, start);
+    // A turn that starts and ends inside one bucket is already where it belongs.
+    if (startIndex >= 0 && end <= buckets[startIndex].end) continue;
+    touched = true;
+    const title = String(state.title || id);
+    // Add the in-window portion to every bucket the turn covers.
+    for (let index = Math.max(0, startIndex); index < buckets.length && buckets[index].start < end; index += 1) {
+      const bucket = buckets[index];
+      const overlap = Math.min(end, bucket.end) - Math.max(start, bucket.start);
+      if (overlap <= 0) continue;
+      const share = Math.min(1, overlap / length);
+      const entry = activityDeltaFor(delta, index);
+      entry.tokens += total * share;
+      const session = activitySessionDeltaFor(entry, id);
+      session.title = session.title || title;
+      session.tokens += total * share;
+      for (const [name, value] of Object.entries(modelTokens)) {
+        const amount = Math.max(0, Number(value) || 0) * share;
+        if (amount <= 0) continue;
+        entry.modelTokens[name] = (entry.modelTokens[name] || 0) + amount;
+        session.modelTokens[name] = (session.modelTokens[name] || 0) + amount;
+      }
+    }
+    // Take back what the start bucket was credited with.
+    if (startIndex < 0) continue;
+    const origin = activityDeltaFor(delta, startIndex);
+    origin.tokens -= total;
+    const originSession = activitySessionDeltaFor(origin, id);
+    originSession.title = originSession.title || title;
+    originSession.tokens -= total;
+    for (const [name, value] of Object.entries(modelTokens)) {
+      const amount = Math.max(0, Number(value) || 0);
+      if (amount <= 0) continue;
+      origin.modelTokens[name] = (origin.modelTokens[name] || 0) - amount;
+    }
+  }
+  if (!touched) return false;
+  for (const [index, entry] of delta) {
+    const bucket = buckets[index];
+    if (bucket === undefined) continue;
+    bucket.tokens = Math.max(0, Math.round(bucket.tokens + entry.tokens));
+    for (const [id, session] of entry.sessions) {
+      const item = bucket.sessions[id] || (bucket.sessions[id] = { ...emptySessionEntry(), title: session.title || id });
+      if (!item.title) item.title = session.title || id;
+      item.tokens = Math.max(0, Math.round(item.tokens + session.tokens));
+      for (const [name, value] of Object.entries(session.modelTokens)) {
+        item.modelTokens[name] = Math.max(0, Math.round((Number(item.modelTokens[name]) || 0) + value));
+      }
+    }
+    for (const [name, value] of Object.entries(entry.modelTokens)) {
+      bucket.modelTokens[name] = Math.max(0, Math.round((Number(bucket.modelTokens[name]) || 0) + value));
+    }
+    bucket.sessionCount = Object.keys(bucket.sessions).length;
+  }
+  return true;
 }
 
 /**
@@ -1271,9 +1418,11 @@ function assembleActivityView(shape, buckets, todayRaw) {
  * per-hour, per-model breakdown, so the UI can answer both "what happened
  * today" and "which model was called when".
  */
-export function activityBuckets(days, mode = 'day', now = Date.now()) {
+export function activityBuckets(days, mode = 'day', now = Date.now(), options = {}) {
   const source = isRecord(days) ? days : {};
   const shape = mode === 'today' ? 'today' : mode === 'week' ? 'week' : mode === 'month' ? 'month' : 'day';
+  const scope = isRecord(options) && options.scope instanceof Set ? options.scope : null;
+  const turns = isRecord(options) && isRecord(options.turns) ? options.turns : null;
   const buckets = [];
   let todayRaw = {};
   if (shape === 'today') {
@@ -1286,7 +1435,7 @@ export function activityBuckets(days, mode = 'day', now = Date.now()) {
       const key = String(hour).padStart(2, '0');
       const bucket = emptyActivityBucket(key, key + ':00', start.getTime(), start.getTime() + 60 * 60 * 1000);
       const hourRecord = isRecord(hourRecords[key]) ? hourRecords[key] : {};
-      absorbActivityRecord(bucket, withDaySpans(hourRecord, todayRaw));
+      absorbActivityRecord(bucket, withDaySpans(hourRecord, todayRaw), scope);
       buckets.push(bucket);
     }
   } else {
@@ -1321,10 +1470,13 @@ export function activityBuckets(days, mode = 'day', now = Date.now()) {
       const time = dayKeyTime(key);
       if (time === 0) continue;
       const bucket = buckets.find(item => time >= item.start && time < item.end);
-      if (bucket !== undefined) absorbActivityRecord(bucket, raw);
+      if (bucket !== undefined) absorbActivityRecord(bucket, raw, scope);
     }
   }
-  return assembleActivityView(shape, buckets, todayRaw);
+  // Range-exact tokens: spread cross-bucket turns, then drop the day-record
+  // fallback, which would put whole-session numbers back on the page.
+  const spread = turns === null ? false : spreadTurnTokens(buckets, turns, scope);
+  return assembleActivityView(shape, buckets, spread || scope !== null ? {} : todayRaw);
 }
 
 /** Granularities a custom window can be cut into. */
@@ -1409,6 +1561,8 @@ function bucketLabelFor(time, grain) {
  */
 export function activityRange(days, options = {}, now = Date.now()) {
   const source = isRecord(days) ? days : {};
+  const scope = isRecord(options) && options.scope instanceof Set ? options.scope : null;
+  const turns = isRecord(options) && isRecord(options.turns) ? options.turns : null;
   const bounds = activityRangeBounds(options.from, options.to, now);
   const requestedGrain = ACTIVITY_GRAINS.includes(String(options.grain)) ? String(options.grain) : 'day';
   const grain = activityRangeGrain(requestedGrain, bounds.start, bounds.end);
@@ -1430,13 +1584,14 @@ export function activityRange(days, options = {}, now = Date.now()) {
         at.setHours(hour, 0, 0, 0);
         const bucket = buckets.find(item => at.getTime() >= item.start && at.getTime() < item.end);
         const hourRecord = isRecord(hours[String(hour).padStart(2, '0')]) ? hours[String(hour).padStart(2, '0')] : {};
-        if (bucket !== undefined) absorbActivityRecord(bucket, withDaySpans(hourRecord, raw));
+        if (bucket !== undefined) absorbActivityRecord(bucket, withDaySpans(hourRecord, raw), scope);
       }
     } else {
       const bucket = buckets.find(item => time >= item.start && time < item.end);
-      if (bucket !== undefined) absorbActivityRecord(bucket, raw);
+      if (bucket !== undefined) absorbActivityRecord(bucket, raw, scope);
     }
   }
+  if (turns !== null) spreadTurnTokens(buckets, turns, scope);
   const view = assembleActivityView('custom', buckets, {});
   return {
     ...view,
@@ -1449,13 +1604,28 @@ export function activityRange(days, options = {}, now = Date.now()) {
   };
 }
 
+/** Narrow a ledger record to the picked sessions (wall cells reuse it). */
+function scopedRecord(raw, scope) {
+  if (!(scope instanceof Set) || !isRecord(raw)) return raw;
+  let tokens = 0;
+  let durationMs = 0;
+  let spans = [];
+  for (const [id, session] of Object.entries(isRecord(raw.sessions) ? raw.sessions : {})) {
+    if (!scope.has(id) || !isRecord(session)) continue;
+    tokens += Math.max(0, Number(session.tokens) || 0);
+    durationMs += Math.max(0, Number(session.durationMs) || 0);
+    if (Array.isArray(session.spans)) spans = spans.concat(session.spans);
+  }
+  return { tokens, durationMs, spans };
+}
+
 /**
  * GitHub-style daily activity wall: seven weekday rows by 53 weeks, with a
  * four-step token intensity scale. Future cells stay blank rather than zero.
  * When a window is supplied, cells outside it are flagged so the wall can dim
  * them while keeping the long-range rhythm readable.
  */
-export function activityWall(days, now = Date.now(), weeks = 53, range = null) {
+export function activityWall(days, now = Date.now(), weeks = 53, range = null, scope = null) {
   const source = isRecord(days) ? days : {};
   const count = Math.max(4, Math.min(60, Math.floor(Number(weeks) || 53)));
   const bounds = isRecord(range) && Number(range.start) > 0 && Number(range.end) > Number(range.start)
@@ -1472,7 +1642,7 @@ export function activityWall(days, now = Date.now(), weeks = 53, range = null) {
     for (let day = 0; day < 7; day += 1) {
       const time = addLocalDays(first, week * 7 + day);
       const key = localDayKey(time);
-      const raw = isRecord(source[key]) ? source[key] : {};
+      const raw = scopedRecord(isRecord(source[key]) ? source[key] : {}, scope);
       const tokens = Math.max(0, Number(raw.tokens) || 0);
       const durationMs = Math.max(0, Number(raw.durationMs) || 0);
       const busyMs = spanTotalMs(mergeSpans(Array.isArray(raw.spans) ? raw.spans : [], time, time + 24 * 60 * 60 * 1000));

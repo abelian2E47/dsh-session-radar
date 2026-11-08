@@ -693,4 +693,52 @@ test('sessionBranches resolves parent and subagent children', () => {
   assert.equal(leaf.children.length, 0);
   assert.equal(sessionBranches(entries, 'missing').parent, null);
   assert.deepEqual(sessionBranches(null, 'p').children, []);
+});test('activity tokens are clipped to the picked window instead of the session total', () => {
+  const started = new Date(2026, 10, 7, 22, 0, 0, 0).getTime();
+  const turn = { sessionId: 'a', title: '会话A', startedAt: started, durationMs: 4 * 60 * 60 * 1000, tokens: 1000, modelTokens: { 'model-x': 1000 }, day: '2026-11-07' };
+  const turns = {};
+  turns['a:1:' + started] = turn;
+  const session = { title: '会话A', tokens: 1000, durationMs: 0, turns: 1, calls: 1, models: { 'model-x': 1 }, modelTokens: { 'model-x': 1000 }, spans: [[started, started + 4 * 60 * 60 * 1000]] };
+  const dayRecord = { tokens: 1000, durationMs: 0, turns: 1, calls: 1, models: { 'model-x': 1 }, modelTokens: { 'model-x': 1000 }, spans: session.spans, sessions: { a: session } };
+  const days = { '2026-11-07': dayRecord };
+
+  // Without the turn ledger the whole turn sits on the day it started.
+  assert.equal(activityRange(days, { from: '2026-11-07', to: '2026-11-07' }).totalTokens, 1000);
+  assert.equal(activityRange(days, { from: '2026-11-08', to: '2026-11-08' }).totalTokens, 0);
+  // With it, each day only reports the hours that actually ran inside it.
+  assert.equal(activityRange(days, { from: '2026-11-07', to: '2026-11-07', turns }).totalTokens, 500);
+  assert.equal(activityRange(days, { from: '2026-11-08', to: '2026-11-08', turns }).totalTokens, 500);
+  assert.equal(activityRange(days, { from: '2026-11-07', to: '2026-11-08', turns }).totalTokens, 1000);
 });
+
+test('activity statistics honour a workspace or session scope', () => {
+  const started = new Date(2026, 10, 7, 9, 0, 0, 0).getTime();
+  const sessionA = { title: '会话A', tokens: 700, durationMs: 1000, turns: 2, calls: 3, models: { 'model-x': 3 }, modelTokens: { 'model-x': 700 }, spans: [[started, started + 1000]] };
+  const sessionB = { title: '会话B', tokens: 300, durationMs: 500, turns: 1, calls: 1, models: { 'model-y': 1 }, modelTokens: { 'model-y': 300 }, spans: [[started, started + 500]] };
+  const dayRecord = {
+    tokens: 1000, durationMs: 1500, turns: 3, calls: 4,
+    models: { 'model-x': 3, 'model-y': 1 }, modelTokens: { 'model-x': 700, 'model-y': 300 },
+    spans: [[started, started + 1000]], sessions: { a: sessionA, b: sessionB },
+  };
+  const days = { '2026-11-07': dayRecord };
+  const all = activityRange(days, { from: '2026-11-07', to: '2026-11-07' });
+  assert.equal(all.totalTokens, 1000);
+  assert.equal(all.sessionTotals.length, 2);
+
+  const onlyB = activityRange(days, { from: '2026-11-07', to: '2026-11-07', scope: new Set(['b']) });
+  assert.equal(onlyB.totalTokens, 300);
+  assert.equal(onlyB.totalTurns, 1);
+  assert.equal(onlyB.sessionTotals.length, 1);
+  assert.equal(onlyB.sessionTotals[0].title, '会话B');
+  assert.deepEqual(onlyB.modelTotals.map(item => item.name), ['model-y']);
+
+  const wallAll = activityWall(days, started + 5_000, 8);
+  const wallB = activityWall(days, started + 5_000, 8, null, new Set(['b']));
+  assert.equal(wallAll.totalTokens, 1000);
+  assert.equal(wallB.totalTokens, 300);
+
+  const buckets = activityBuckets(days, 'day', started + 5_000, { scope: new Set(['a']) });
+  assert.equal(buckets.totalTokens, 700);
+});
+
+
