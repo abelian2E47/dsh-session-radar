@@ -35,6 +35,11 @@ import {
   STALL_MINUTES_DEFAULT,
   sessionReportMarkdown,
   sessionBranches,
+  sessionTree,
+  TREE_KIND_TEXT,
+  MAX_TURNS,
+  MAX_TURN_PROMPT,
+  MAX_TURN_TEXT,
   turnDigest,
   STALL_AFTER_MS,
   toolBreakdown,
@@ -622,6 +627,77 @@ test('status filters and sort orders narrow the board', () => {
   assert.equal(options.statuses.find(option => option.value === 'all').count, 4);
   assert.equal(options.statuses.find(option => option.value === 'live').count, 2);
   assert.equal(options.statuses.find(option => option.value === 'stalled').count, 1);
+});
+
+test('every round keeps the event seq window a fork can cut at', () => {
+  const t = createTelemetry(row());
+  reduceEvent(t, event('turn/start', 0, { turn: 1 }, 1_000));
+  reduceEvent(t, event('user/message', 1, { source: { kind: 'user' }, content: [{ text: '先跑测试' }] }, 1_100));
+  reduceEvent(t, event('tool/call', 2, { name: 'run_code', callId: 'c1', arguments: { description: '跑一遍' } }, 1_200));
+  reduceEvent(t, event('tool/result', 3, { callId: 'c1', ok: true }, 1_300));
+  reduceEvent(t, event('turn/end', 4, {}, 1_400));
+  reduceEvent(t, event('turn/start', 5, { turn: 2 }, 1_500));
+  const entry = deriveEntry(row(), t, { now: 2_000 });
+  assert.equal(entry.turns.length, 2);
+  assert.equal(entry.turns[0].firstSeq, 1);
+  assert.equal(entry.turns[0].lastSeq, 4);
+  assert.equal(entry.turns[0].state, 'done');
+  assert.equal(entry.turns[1].firstSeq, 5);
+  assert.equal(entry.turns[1].lastSeq, 5);
+  assert.equal(entry.turns[1].state, 'running');
+});
+
+test('a long session keeps every round it needs, with the round text intact', () => {
+  const t = createTelemetry(row());
+  const longPrompt = 'x'.repeat(5000);
+  const longReply = 'y'.repeat(7000);
+  for (let round = 1; round <= 120; round += 1) {
+    reduceEvent(t, event('turn/start', round * 10, { turn: round }, round * 10_000));
+    reduceEvent(t, event('user/message', round * 10 + 1, { source: { kind: 'user' }, content: [{ text: round === 1 ? longPrompt : '第 ' + round + ' 轮' }] }, round * 10_000 + 100));
+    reduceEvent(t, event('assistant/message', round * 10 + 2, {
+      message: {
+        role: 'assistant',
+        source: { provider: 'rain-wb', model: 'deepseek-v4.1-flash' },
+        content: [{ type: 'reasoning', text: 'think ' + round }, { type: 'text', text: round === 1 ? longReply : '好，第 ' + round + ' 轮做完了' }],
+      },
+    }, round * 10_000 + 200));
+    reduceEvent(t, event('turn/end', round * 10 + 3, {}, round * 10_000 + 300));
+  }
+  const entry = deriveEntry(row(), t, { now: 2_000_000 });
+  assert.equal(MAX_TURNS, 200);
+  assert.equal(entry.turns.length, 120);
+  assert.equal(entry.turns[0].index, 1);
+  assert.equal(entry.turns[119].index, 120);
+  assert.equal(entry.turns[0].prompt.length, MAX_TURN_PROMPT);
+  assert.equal(entry.turns[0].text.length, MAX_TURN_TEXT);
+  assert.equal(entry.turns[1].text, '好，第 2 轮做完了');
+  assert.match(entry.turns[0].reasoning, /^think 1/);
+});
+
+test('the lineage tree nests forks and subagents and folds on demand', () => {
+  const entries = [
+    { id: 'a', title: '根', updatedAt: 10 },
+    { id: 'b', title: '分叉一', updatedAt: 30, parentId: 'a' },
+    { id: 'c', title: '子代理', updatedAt: 20, parentId: 'a', origin: 'subagent' },
+    { id: 'd', title: '再分叉', updatedAt: 40, parentId: 'b' },
+    { id: 'e', title: '无关会话', updatedAt: 5 },
+  ];
+  const tree = sessionTree(entries, 'd');
+  assert.equal(tree.rootId, 'a');
+  assert.deepEqual(tree.rows.map(item => item.id), ['a', 'b', 'd', 'c']);
+  assert.deepEqual(tree.rows.map(item => item.depth), [0, 1, 2, 1]);
+  assert.deepEqual(tree.rows.map(item => item.kind), ['root', 'fork', 'fork', 'subagent']);
+  assert.equal(tree.rows[2].current, true);
+  assert.equal(tree.rows[0].children, 2);
+  assert.equal(TREE_KIND_TEXT.fork, '分叉');
+  const folded = sessionTree(entries, 'd', { collapsed: ['b'] });
+  assert.deepEqual(folded.rows.map(item => item.id), ['a', 'b', 'c']);
+  assert.equal(folded.rows[1].collapsed, true);
+  assert.equal(sessionTree(entries, 'e').rows.map(item => item.id).join(','), 'e');
+  assert.equal(sessionTree(entries, 'missing').rows.length, 0);
+  // cycles degrade to a walkable chain instead of looping forever
+  const cyclic = sessionTree([{ id: 'x', parentId: 'y' }, { id: 'y', parentId: 'x' }], 'x');
+  assert.deepEqual(cyclic.rows.map(item => item.id), ['x', 'y']);
 });
 
 test('tool breakdown and the markdown report describe a whole turn', () => {

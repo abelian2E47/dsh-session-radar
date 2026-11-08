@@ -51,7 +51,7 @@ const bundle = [
   '',
   '    exports.apply = apply;',
   '    exports.inject = inject;',
-  '    if (globalThis.__DSR_TEST__ === true) exports.__components = { Dock, SidebarPins, SidebarPinRow, QuickBar, RadarPage, DetailPanel, SessionRow, PrefsMenu, EmptyRadar, UsageView, ActivityView, PageSearchView, SearchResultsPanel, SessionCard, WorkspaceBoard, HistorySessionCard, BulkBar, SessionFlow, TurnRow };',
+  '    if (globalThis.__DSR_TEST__ === true) exports.__components = { Dock, SidebarPins, SidebarPinRow, QuickBar, RadarPage, DetailPanel, SessionRow, PrefsMenu, EmptyRadar, UsageView, ActivityView, PageSearchView, SearchResultsPanel, SessionCard, WorkspaceBoard, HistorySessionCard, BulkBar, SessionFlow, TurnRow, SessionTreeSection };',
   '    return module.exports;',
   '  },',
   '});',

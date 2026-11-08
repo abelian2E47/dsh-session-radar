@@ -141,8 +141,8 @@
      "endedAt": 1794021352572,
      "durationMs": 61000,
      "state": "done",
-     "prompt": "盘点 DSH 的插件槽位和会话 API，先给出接入方案。",
-     "text": "",
+     "prompt": "线上偶发回调重复扣款，先梳理重试链路。\n\n背景：过去一周共出现 7 次重复扣款，全部集中在 21:00 之后的批量结算窗口。目前的重试策略是「失败立即重试 3 次，间隔 200ms」，网关在高峰期会把请求排队到 30 秒以上，我们自己的重试和网关侧的自动重投叠加在一起，导致同一笔回调被处理两次。财务那边上周已经手工退款 4 笔，需要尽快止血。\n\n希望做到：\n1. 用幂等键去重，回调进来先查幂等表，命中就直接返回成功，并把这次请求标记成 duplicate；\n2. 重试改成指数退避，并加入总时长上限，避免和我们自己的批量任务叠加；\n3. 补一条监控，重复回调命中时打点，方便之后回看高峰期的实际比例；\n4. 顺带把回调入口的日志补上 trace id，方便和网关侧的对账日志关联。\n\n约束：\n· 不要改动对账任务的入参格式，财务那边的脚本还在用旧字段；\n· 幂等表的写入必须和业务处理在同一个事务里，避免「写入了但业务失败」的不一致；\n· 先不要动网关配置，这次只改我们自己的服务；\n· 改完跑一遍回调集成测试，另外补重复回调的用例。",
+     "text": "先读了回调入口与重试封装，确认重复的来源：网关重投和我们自己的立即重试叠加，两条路径分别落在 callback/router.ts 和 retry/policy.ts 里。\n\n改了三处：\n· callback/router.ts：进入 handler 前先按 (order_no, event_type) 查幂等表，命中即返回 200，并打上 duplicate 标记；\n· retry/policy.ts：把固定间隔换成指数退避 200ms → 2s → 8s，最多 3 次，总时长超过 20s 直接放弃，避免占用 worker；\n· metrics/callback.ts：重复命中时上报 duplicate_callback 计数，带 event_type 与 workspace 标签，方便之后看高峰期的比例；\n· logger.ts：回调入口补上 trace id，和网关侧的对账日志能对上。\n\n幂等表用的是现有的 payments_idempotency，读写都在业务事务内，测试里验证了回滚时幂等记录会一起消失。\n跑了一遍现有的回调集成测试（12 个用例）全部通过，另外补了三个重复回调的用例：同一笔重复投递、并发重复投递、以及事务失败后的再次投递。\n另外注意到网关侧在 21:00 的批量窗口里会把同一笔回调重投到两个实例，所以幂等键只用 order_no 不够，必须带上 event_type；这点在原方案里没写，已经在实现里加上，并补了一条注释说明。\n下一步想做的是把幂等表的过期时间从 7 天延长到 30 天，和财务的对账周期对齐，但这个改动会动表结构，等这次止血上线之后再单独提一个 PR。",
      "steps": 8,
      "tools": 7,
      "errors": 0,
@@ -180,7 +180,10 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 1,
+     "lastSeq": 5,
+     "reasoning": "先确认重试来源，再决定幂等键放在哪一层：放在 handler 内部只能挡住业务重复，挡不住事务外的那次重投，所以放在路由入口更稳妥。"
     },
     {
      "index": 2,
@@ -218,7 +221,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 6,
+     "lastSeq": 10
     },
     {
      "index": 3,
@@ -277,7 +282,9 @@
      "calls": 3,
      "models": {
       "deepseek-v4.1-flash": 3
-     }
+     },
+     "firstSeq": 11,
+     "lastSeq": 16
     }
    ],
    "toolCount": 22,
@@ -417,7 +424,9 @@
      "calls": 1,
      "models": {
       "deepseek-v4.1-flash": 1
-     }
+     },
+     "firstSeq": 17,
+     "lastSeq": 20
     },
     {
      "index": 2,
@@ -455,7 +464,9 @@
      "calls": 1,
      "models": {
       "deepseek-v4.1-flash": 1
-     }
+     },
+     "firstSeq": 21,
+     "lastSeq": 24
     },
     {
      "index": 3,
@@ -493,7 +504,9 @@
      "calls": 1,
      "models": {
       "deepseek-v4.1-flash": 1
-     }
+     },
+     "firstSeq": 25,
+     "lastSeq": 28
     },
     {
      "index": 4,
@@ -542,12 +555,16 @@
      "calls": 1,
      "models": {
       "deepseek-v4.1-flash": 1
-     }
+     },
+     "firstSeq": 29,
+     "lastSeq": 32
     }
    ],
    "toolCount": 6,
    "deliveryState": "changed",
-   "stallAfterMs": 300000
+   "stallAfterMs": 300000,
+   "parentId": "s1",
+   "origin": "fork"
   },
   {
    "id": "s3",
@@ -655,7 +672,9 @@
      "calls": 1,
      "models": {
       "deepseek-v4.1-flash": 1
-     }
+     },
+     "firstSeq": 33,
+     "lastSeq": 36
     },
     {
      "index": 2,
@@ -693,7 +712,9 @@
      "calls": 1,
      "models": {
       "deepseek-v4.1-flash": 1
-     }
+     },
+     "firstSeq": 37,
+     "lastSeq": 40
     }
    ],
    "toolCount": 5,
@@ -825,7 +846,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 41,
+     "lastSeq": 45
     },
     {
      "index": 2,
@@ -863,7 +886,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 46,
+     "lastSeq": 50
     },
     {
      "index": 3,
@@ -922,7 +947,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 51,
+     "lastSeq": 55
     }
    ],
    "toolCount": 16,
@@ -1033,7 +1060,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 56,
+     "lastSeq": 60
     },
     {
      "index": 2,
@@ -1071,7 +1100,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 61,
+     "lastSeq": 65
     },
     {
      "index": 3,
@@ -1109,7 +1140,9 @@
      "calls": 3,
      "models": {
       "deepseek-v4.1-flash": 3
-     }
+     },
+     "firstSeq": 66,
+     "lastSeq": 71
     },
     {
      "index": 4,
@@ -1147,7 +1180,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 72,
+     "lastSeq": 76
     },
     {
      "index": 5,
@@ -1194,7 +1229,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 77,
+     "lastSeq": 81
     },
     {
      "index": 6,
@@ -1232,7 +1269,9 @@
      "calls": 3,
      "models": {
       "deepseek-v4.1-flash": 3
-     }
+     },
+     "firstSeq": 82,
+     "lastSeq": 87
     },
     {
      "index": 7,
@@ -1270,7 +1309,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 88,
+     "lastSeq": 92
     }
    ],
    "toolCount": 45,
@@ -1417,7 +1458,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 93,
+     "lastSeq": 97
     },
     {
      "index": 2,
@@ -1455,7 +1498,9 @@
      "calls": 1,
      "models": {
       "deepseek-v4.1-flash": 1
-     }
+     },
+     "firstSeq": 98,
+     "lastSeq": 101
     }
    ],
    "toolCount": 7,
@@ -1603,7 +1648,9 @@
      "calls": 2,
      "models": {
       "deepseek-v4.1-flash": 2
-     }
+     },
+     "firstSeq": 102,
+     "lastSeq": 106
     },
     {
      "index": 2,
@@ -1632,7 +1679,9 @@
      "calls": 1,
      "models": {
       "deepseek-v4.1-flash": 1
-     }
+     },
+     "firstSeq": 107,
+     "lastSeq": 110
     }
    ],
    "toolCount": 7,
@@ -5357,5 +5406,14 @@
    },
    "ended": true
   }
- }
+ },
+ "fork": {
+  "status": "idle",
+  "sessionId": "",
+  "atSeq": 0,
+  "childId": "",
+  "error": "",
+  "turn": 0
+ },
+ "canFork": true
 }

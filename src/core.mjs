@@ -406,7 +406,12 @@ function upsertAction(actions, action) {
 }
 
 /** Turn records kept per session; older turns fall off the head. */
-export const MAX_TURNS = 60;
+export const MAX_TURNS = 200;
+
+/** How much of a round's own words are kept, so a whole round reads back verbatim. */
+export const MAX_TURN_PROMPT = 4000;
+export const MAX_TURN_TEXT = 6000;
+export const MAX_TURN_REASONING = 2500;
 
 /** Tool calls kept per turn: enough to read one whole round of work. */
 export const MAX_TURN_CHAIN = 40;
@@ -433,6 +438,8 @@ function openTurn(telemetry, index, at) {
     prompt: '',
     text: '',
     reasoning: '',
+    firstSeq: 0,
+    lastSeq: 0,
     chain: [],
   };
   telemetry.turns = [...telemetry.turns, turn].slice(-MAX_TURNS);
@@ -591,16 +598,22 @@ export function reduceEvent(telemetry, input) {
         telemetry.eventTokens.cacheWriteTokens += Number(usage.cacheWriteTokens) || 0;
       }
       let hasText = false;
+      let fullText = '';
+      let fullReasoning = '';
       if (Array.isArray(message.content)) {
         for (const block of message.content) {
           if (!isRecord(block)) continue;
-          if (block.type === 'reasoning' && typeof block.text === 'string') telemetry.reasoning = truncate(block.text, 220);
+          if (block.type === 'reasoning' && typeof block.text === 'string') fullReasoning += block.text;
           if (block.type === 'text' && typeof block.text === 'string' && block.text.trim() !== '') {
-            telemetry.lastText = truncate(block.text, 500);
+            fullText += (fullText === '' ? '' : '\n\n') + block.text;
             hasText = true;
           }
         }
       }
+      // The live line only ever shows a preview, so it stays short; the turn keeps
+      // the whole body so the panel can unfold the real reply later.
+      if (fullReasoning !== '') telemetry.reasoning = truncate(fullReasoning, 220);
+      if (hasText) telemetry.lastText = truncate(fullText, 500);
       if (Object.keys(telemetry.pendingCalls).length > 0) telemetry.phase = 'tool';
       else telemetry.phase = hasText ? 'responding' : 'thinking';
       const messageTurn = ensureTurn(telemetry, time);
@@ -613,8 +626,8 @@ export function reduceEvent(telemetry, input) {
       if (messageTokens > 0) messageTurn.modelTokens[modelName] = (Number(messageTurn.modelTokens[modelName]) || 0) + messageTokens;
       if (messageTurn.model === undefined || messageTurn.model === '') messageTurn.model = modelName;
       if (messageTokens > 0) messageTurn.tokens += messageTokens;
-      if (hasText) messageTurn.text = telemetry.lastText;
-      if (typeof telemetry.reasoning === 'string' && telemetry.reasoning !== '') messageTurn.reasoning = telemetry.reasoning;
+      if (hasText) messageTurn.text = truncate(fullText, MAX_TURN_TEXT);
+      if (fullReasoning !== '') messageTurn.reasoning = truncate(fullReasoning, MAX_TURN_REASONING);
       break;
     }
     case 'tool/call':
@@ -773,12 +786,19 @@ export function reduceEvent(telemetry, input) {
         const text = data.content.map(part => part?.text || '').join(' ').trim();
         if (text !== '') {
           telemetry.lastPrompt = truncate(text, 260);
-          ensureTurn(telemetry, time).prompt = truncate(text, 200);
+          ensureTurn(telemetry, time).prompt = truncate(text, MAX_TURN_PROMPT);
         }
       }
       break;
     }
     default: break;
+  }
+  if (Number.isFinite(seq)) {
+    const activeTurn = currentTurn(telemetry);
+    if (activeTurn !== null) {
+      if (!(Number(activeTurn.firstSeq) > 0)) activeTurn.firstSeq = seq;
+      activeTurn.lastSeq = seq;
+    }
   }
   syncPendingSince(telemetry, time);
   return true;
@@ -858,6 +878,8 @@ export function buildTurnViews(telemetry, now = Date.now()) {
       startedAt: turn.startedAt,
       endedAt: turn.endedAt,
       durationMs,
+      firstSeq: Number(turn.firstSeq) || 0,
+      lastSeq: Number(turn.lastSeq) || 0,
       state: turn.errors > 0 ? 'error' : live ? 'running' : open ? 'open' : 'done',
       prompt: turn.prompt,
       text: turn.text,
@@ -1994,6 +2016,74 @@ export function sessionBranches(entries, id) {
   const parent = parentId ? list.find(entry => entry && entry.id === parentId) || null : null;
   const children = list.filter(entry => entry && entry.id !== id && entry.parentId === id);
   return { self, parentId, parent, children };
+}
+
+/** How a tree row came to exist, in the words the panel uses. */
+export const TREE_KIND_TEXT = { root: '根会话', fork: '分叉', subagent: '子代理' };
+
+/**
+ * The lineage tree around one session: walk up to the topmost ancestor, then
+ * depth-first through every fork and subagent child, pruning the branches the
+ * caller has collapsed. Rows are what the panel draws; nothing here mutates the
+ * entries or depends on their order in the ledger.
+ */
+export function sessionTree(entries, id, options = {}) {
+  const list = (Array.isArray(entries) ? entries : []).filter(entry => isRecord(entry) && typeof entry.id === 'string' && entry.id !== '');
+  const byId = new Map();
+  for (const entry of list) if (!byId.has(entry.id)) byId.set(entry.id, entry);
+  const currentId = typeof id === 'string' ? id : '';
+  const parentOf = entry => {
+    const parent = typeof entry.parentId === 'string' ? entry.parentId : '';
+    return parent !== '' && parent !== entry.id && byId.has(parent) ? parent : '';
+  };
+  if (!byId.has(currentId)) return { rootId: '', currentId, rows: [], total: 0 };
+  let rootId = currentId;
+  const climbed = new Set();
+  let cursor = byId.get(currentId);
+  while (cursor !== undefined) {
+    if (climbed.has(cursor.id)) break;
+    climbed.add(cursor.id);
+    const parent = parentOf(cursor);
+    if (parent === '') break;
+    rootId = parent;
+    cursor = byId.get(parent);
+  }
+  const children = new Map();
+  for (const entry of byId.values()) {
+    const parent = parentOf(entry);
+    if (parent === '') continue;
+    const bucket = children.get(parent);
+    if (bucket === undefined) children.set(parent, [entry]);
+    else bucket.push(entry);
+  }
+  for (const bucket of children.values()) {
+    bucket.sort((a, b) => (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0) || String(a.id).localeCompare(String(b.id)));
+  }
+  const collapsed = new Set((Array.isArray(options.collapsed) ? options.collapsed : []).filter(item => typeof item === 'string'));
+  const rawDepth = Number(options.maxDepth);
+  const maxDepth = Number.isFinite(rawDepth) && rawDepth >= 0 ? Math.floor(rawDepth) : Number.POSITIVE_INFINITY;
+  const rows = [];
+  const seen = new Set();
+  const walk = (nodeId, depth) => {
+    const entry = byId.get(nodeId);
+    if (entry === undefined || seen.has(nodeId)) return;
+    seen.add(nodeId);
+    const kids = children.get(nodeId) || [];
+    const isCollapsed = kids.length > 0 && collapsed.has(nodeId);
+    rows.push({
+      id: nodeId,
+      entry,
+      depth,
+      kind: nodeId === rootId ? 'root' : entry.origin === 'subagent' ? 'subagent' : 'fork',
+      children: kids.length,
+      collapsed: isCollapsed,
+      current: nodeId === currentId,
+    });
+    if (isCollapsed || depth >= maxDepth) return;
+    for (const kid of kids) walk(kid.id, depth + 1);
+  };
+  walk(rootId, 0);
+  return { rootId, currentId, rows, total: rows.length, collapsed };
 }
 
 const TURN_STATE_TEXT = { done: '已完成', running: '进行中', open: '已中断', error: '有失败' };

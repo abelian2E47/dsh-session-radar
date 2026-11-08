@@ -35,6 +35,29 @@ const SHOTS = [
       "(function(){var b=document.querySelector('.dsr-detail.is-fullscreen .dsr-detail__body');var f=document.querySelector('.dsr-flow-section');if(b&&f){b.scrollTop=Math.max(0,f.getBoundingClientRect().top-b.getBoundingClientRect().top-16);}})()",
     ],
   },
+  {
+    name: 'conversation-round',
+    query: 'mode=page',
+    width: 1600,
+    height: 1180,
+    steps: [
+      "(function(){var cards=document.querySelectorAll('.dsr-card');for(var i=0;i<cards.length;i+=1){if(cards[i].textContent.indexOf('支付回调重试改造')>=0){cards[i].click();return;}}})()",
+      "(function(){var h=document.querySelectorAll('.dsr-turn__head');if(h.length)h[0].click();})()",
+      "(function(){var b=document.querySelector('.dsr-turn__more');if(b)b.click();})()",
+      "(function(){var b=document.querySelector('.dsr-page__detail .dsr-detail__body');var t=document.querySelector('.dsr-turn__panel');if(b&&t){b.scrollTop=Math.max(0,t.getBoundingClientRect().top-b.getBoundingClientRect().top-60);}})()",
+    ],
+  },
+  {
+    name: 'conversation-fork',
+    query: 'mode=page',
+    width: 1600,
+    height: 1180,
+    steps: [
+      "(function(){var cards=document.querySelectorAll('.dsr-card');for(var i=0;i<cards.length;i+=1){if(cards[i].textContent.indexOf('支付回调重试改造')>=0){cards[i].click();return;}}})()",
+      "(function(){var h=document.querySelectorAll('.dsr-turn__head');for(var i=0;i<h.length;i+=1){if(h[i].getAttribute('aria-expanded')!=='true')h[i].click();}})()",
+      "(function(){var b=document.querySelector('.dsr-page__detail .dsr-detail__body');var t=document.querySelector('.dsr-tree-section');if(b&&t){b.scrollTop=Math.max(0,t.getBoundingClientRect().top-b.getBoundingClientRect().top-90);}})()",
+    ],
+  },
   { name: 'statistics', query: 'mode=activity', width: 1320, height: 2100 },
   {
     name: 'statistics-scope',
@@ -127,7 +150,8 @@ const PROBE = [
   '    cards: document.querySelectorAll(".dsr-card").length,',
   '    flow: document.querySelectorAll(".dsr-turn").length,',
   '    nav: document.querySelectorAll(".dsr-flow__navchip").length,',
-  '    branch: document.querySelectorAll(".dsr-branch").length,',
+  '    tree: document.querySelectorAll(".dsr-tree__row").length,',
+  '    forkAction: document.querySelectorAll(".dsr-turn__fork").length,',
   '    full: document.querySelectorAll(".dsr-detail.is-fullscreen").length,',
   '    track: document.querySelectorAll(".dsr-time__seg").length,',
   '    err: (window.__harnessError || null)',
@@ -150,7 +174,7 @@ for (const shot of SHOTS) {
   const file = path.join(OUT, shot.name + '.png');
   fs.writeFileSync(file, Buffer.from(shotData.data, 'base64'));
   const size = (fs.statSync(file).size / 1024).toFixed(0);
-  console.log(shot.name + '.png  ' + shot.width + 'x' + shot.height + '  ' + size + ' KB  textChars=' + probe.text + ' nodes=' + probe.nodes + ' cards=' + probe.cards + ' turns=' + probe.flow + ' segs=' + probe.track + (probe.dock ? ' dock=' + probe.dock.slice(1).join(',') : '') + ' nav=' + probe.nav + ' branch=' + probe.branch + ' full=' + probe.full);
+  console.log(shot.name + '.png  ' + shot.width + 'x' + shot.height + '  ' + size + ' KB  textChars=' + probe.text + ' nodes=' + probe.nodes + ' cards=' + probe.cards + ' turns=' + probe.flow + ' segs=' + probe.track + (probe.dock ? ' dock=' + probe.dock.slice(1).join(',') : '') + ' nav=' + probe.nav + ' tree=' + probe.tree + ' fork=' + probe.forkAction + ' full=' + probe.full);
   console.log('   text: ' + probe.snippet);
 }
 

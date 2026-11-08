@@ -447,9 +447,10 @@ function SessionRow(props) {
       type: 'button',
       className: 'dsr-row-main',
       key: 'main',
-      onClick: function () { if (props.onOpen) props.onOpen(entry.id); else props.onSelect(entry.id); },
-      title: '进入会话：' + entry.title,
-      'aria-label': '进入会话 ' + entry.title + (entry.unread ? '（最近完成，尚未验收）' : ''),
+      onClick: function () { props.onSelect(entry.id); },
+      onDoubleClick: function () { if (typeof props.onOpenFull === 'function') props.onOpenFull(entry.id); },
+      title: '查看详情：' + entry.title + '（双击全屏）',
+      'aria-label': '查看会话详情 ' + entry.title + (entry.unread ? '（最近完成，尚未验收）' : ''),
     }, [
       h('span', { className: 'dsr-dot', key: 'dot', 'aria-hidden': 'true' }),
       h('span', { className: 'dsr-row-body', key: 'body' }, [
@@ -961,7 +962,7 @@ function QuickBar(props) {
         'data-status': entry.status,
         title: sessionTitle + ' · ' + metaText,
         'aria-current': entry.id === state.currentId ? 'true' : undefined,
-        'aria-label': '打开会话：' + sessionTitle + (entry.id === state.currentId ? '，当前会话' : '') + (entry.unread ? '，最近完成，待验收' : ''),
+        'aria-label': '切换到会话：' + sessionTitle + (entry.id === state.currentId ? '，当前会话' : '') + (entry.unread ? '，最近完成，待验收' : ''),
         onClick: function () { props.onOpenSession(entry.id); },
       }, [
         h('span', { className: 'dsr-quickbar__glyph', key: 'g' }, [
@@ -1314,13 +1315,16 @@ function Dock(props) {
     if (!open) return;
     const keydown = function (event) {
       if (event.key !== 'Escape') return;
+      // Escape leaves the full-screen dialog first; the detail panel handles that
+      // and stops the event, so this only runs when there is nothing to leave.
+      if (state.detailFull === true) return;
       event.preventDefault();
       if (state.ui.selectedId !== null) controller.back();
       else controller.close();
     };
     window.addEventListener('keydown', keydown, true);
     return function () { window.removeEventListener('keydown', keydown, true); };
-  }, [open, state.ui.selectedId, controller]);
+  }, [open, state.ui.selectedId, state.detailFull, controller]);
   if (!open) {
     const working = state.counts.active + state.counts.waiting;
     const railVisible = state.prefs.showRail !== false;
@@ -1376,7 +1380,21 @@ function Dock(props) {
   const dockPool = state.entries.concat(state.archivedEntries || []);
   let body;
   if (selected) {
-    body = h(DetailPanel, { key: 'detail', entry: selected, controller: controller, now: now, variant: 'dock', entries: dockPool, onSelect: function (id) { controller.select(id); }, onBack: function () { controller.back(); } });
+    body = h(DetailPanel, {
+      key: 'detail',
+      entry: selected,
+      controller: controller,
+      now: now,
+      variant: 'dock',
+      entries: dockPool,
+      fork: state.fork,
+      canFork: state.canFork !== false,
+      full: state.detailFull === true,
+      onFull: function (value) { controller.setDetailFull(value); },
+      onSelect: function (id) { controller.select(id); },
+      onOpenFull: function (id) { controller.openFullDetail(id); },
+      onBack: function () { controller.back(); },
+    });
   } else {
     const items = [];
     if (state.error) items.push(h('div', { className: 'dsr-banner is-error', key: 'error' }, [h(Icon, { name: 'warning', size: 13 }), h('span', null, state.error), h('button', { type: 'button', className: 'dsr-banner__action', onClick: function () { controller.refresh(); } }, '重试')]));
@@ -1386,25 +1404,25 @@ function Dock(props) {
     else if (state.ui.tab === 'live') items.push(h('section', { className: 'dsr-section', key: 'live' }, [
       h(SectionHeader, { key: 'head', title: '进行中', count: live.length }),
       live.length === 0 ? h(EmptyRadar, { key: 'empty', compact: true, onRecent: function () { controller.setTab('recent'); } }) : live.map(function (entry) {
-        return h(SessionRow, { key: entry.id, entry: entry, now: now, compact: state.prefs.compact, onSelect: function (id) { controller.select(id); }, onOpen: function (id) { controller.openSession(id); }, onPin: function (id) { controller.togglePin(id); } });
+        return h(SessionRow, { key: entry.id, entry: entry, now: now, compact: state.prefs.compact, onSelect: function (id) { controller.openDetail(id); }, onOpenFull: function (id) { controller.openFullDetail(id); }, onOpen: function (id) { controller.openSession(id); }, onPin: function (id) { controller.togglePin(id); } });
       }),
     ]));
     if (state.ui.tab === 'live' && recentTail.length > 0) items.push(h('section', { className: 'dsr-section', key: 'recent' }, [
       h(SectionHeader, { key: 'head', title: '最近', count: recentTailSource.length }),
       ...recentTail.map(function (entry) {
-        return h(SessionRow, { key: entry.id, entry: entry, now: now, compact: true, onSelect: function (id) { controller.select(id); }, onOpen: function (id) { controller.openSession(id); }, onPin: function (id) { controller.togglePin(id); } });
+        return h(SessionRow, { key: entry.id, entry: entry, now: now, compact: true, onSelect: function (id) { controller.openDetail(id); }, onOpenFull: function (id) { controller.openFullDetail(id); }, onOpen: function (id) { controller.openSession(id); }, onPin: function (id) { controller.togglePin(id); } });
       }),
     ]));
     if (state.ui.tab === 'recent') items.push(h('section', { className: 'dsr-section', key: 'recent' }, [
       h(SectionHeader, { key: 'head', title: '最近会话', count: recentTailSource.length }),
       recentTailSource.length === 0 ? h(EmptyRadar, { key: 'empty', compact: true }) : recentTailSource.map(function (entry) {
-        return h(SessionRow, { key: entry.id, entry: entry, now: now, compact: state.prefs.compact, onSelect: function (id) { controller.select(id); }, onOpen: function (id) { controller.openSession(id); }, onPin: function (id) { controller.togglePin(id); } });
+        return h(SessionRow, { key: entry.id, entry: entry, now: now, compact: state.prefs.compact, onSelect: function (id) { controller.openDetail(id); }, onOpenFull: function (id) { controller.openFullDetail(id); }, onOpen: function (id) { controller.openSession(id); }, onPin: function (id) { controller.togglePin(id); } });
       }),
     ]));
     if (state.ui.tab === 'pinned') items.push(h('section', { className: 'dsr-section', key: 'pinned' }, [
       h(SectionHeader, { key: 'head', title: '正在跟踪', count: pinned.length }),
       pinned.length === 0 ? h('div', { className: 'dsr-banner' }, '点会话卡片上的图钉把它固定到右侧快捷栏，同时会移到「正在跟踪的会话」。') : pinned.map(function (entry) {
-        return h(SessionRow, { key: entry.id, entry: entry, now: now, compact: state.prefs.compact, onSelect: function (id) { controller.select(id); }, onOpen: function (id) { controller.openSession(id); }, onPin: function (id) { controller.togglePin(id); } });
+        return h(SessionRow, { key: entry.id, entry: entry, now: now, compact: state.prefs.compact, onSelect: function (id) { controller.openDetail(id); }, onOpenFull: function (id) { controller.openFullDetail(id); }, onOpen: function (id) { controller.openSession(id); }, onPin: function (id) { controller.togglePin(id); } });
       }),
     ]));
     body = h('div', { className: 'dsr-scroll' }, items);
@@ -1643,6 +1661,30 @@ function TurnFilePill(props) {
 }
 
 /** One round as a scannable row: state, one-line digest of what it did, tokens. */
+/**
+ * A block of text that shows a readable slice and unfolds to the whole thing.
+ * Prompts, replies and reasoning are kept verbatim by the ledger, so a long
+ * message is only ever one click away from its full body.
+ */
+function ExpandableText(props) {
+  const text = typeof props.text === 'string' ? props.text : '';
+  const limit = Number(props.limit) > 0 ? Number(props.limit) : 640;
+  const [open, setOpen] = useState(false);
+  if (text === '') return null;
+  const long = text.length > limit;
+  const shown = long && !open ? text.slice(0, limit).replace(/\s+$/, '') + '…' : text;
+  return h('div', { className: cx('dsr-turn__expand', open && 'is-open') }, [
+    h('p', { className: 'dsr-turn__text', key: 'text' }, shown),
+    long ? h('button', {
+      type: 'button',
+      className: 'dsr-turn__more',
+      key: 'more',
+      'aria-expanded': open ? 'true' : 'false',
+      onClick: function () { setOpen(!open); },
+    }, open ? '收起' : '展开全文 · ' + text.length + ' 字') : null,
+  ]);
+}
+
 function TurnRow(props) {
   const turn = props.turn;
   const files = Array.isArray(turn.deliverables) ? turn.deliverables : [];
@@ -1670,14 +1712,35 @@ function TurnRow(props) {
     turn.tokens > 0 ? h('span', { className: 'dsr-turn__chip', key: 'tokens' }, [h(Icon, { name: 'token', size: 10, key: 'i' }), formatTokens(turn.tokens) + ' tok']) : null,
     turn.errors > 0 ? h('span', { className: 'dsr-turn__chip is-error', key: 'errors' }, [h(Icon, { name: 'warning', size: 10, key: 'i' }), turn.errors + ' 失败']) : null,
   ]);
+  const canFork = props.canFork !== false && Number(turn.lastSeq) > 0 && typeof props.onFork === 'function';
+  const forking = props.forking === true;
+  const forkAction = expanded ? h('div', { className: 'dsr-turn__actions', key: 'fork' }, [
+    canFork ? h('button', {
+      type: 'button',
+      className: 'dsr-turn__fork',
+      title: turn.state === 'running'
+        ? '从这一轮目前的进度分叉：新会话继承到这一轮此刻为止的对话'
+        : '从这一轮之后分叉：新会话继承到这里为止的对话，可以接着换一条路走',
+      'aria-label': '从第 ' + turn.index + ' 轮分叉出一条新会话',
+      disabled: forking,
+      onClick: function () { props.onFork(turn); },
+    }, [
+      h(Icon, { name: 'branch', size: 11, key: 'icon' }),
+      h('span', { key: 'label' }, forking ? '正在分叉…' : '从这一轮分叉'),
+    ]) : h('span', { className: 'dsr-turn__forknote', key: 'note' }, '这一轮还没有记录到日志位置，等宿主补上事件后才能分叉'),
+  ]) : null;
   const panel = expanded ? h('div', { className: 'dsr-turn__panel', key: 'panel' }, [
     turn.prompt ? h('div', { className: 'dsr-turn__block', key: 'ask' }, [
-      h('span', { className: 'dsr-turn__blocktitle', key: 'title' }, '用户指令'),
-      h('p', { className: 'dsr-turn__text', key: 'text' }, turn.prompt),
+      h('span', { className: 'dsr-turn__blocktitle', key: 'title' }, '用户指令 · ' + turn.prompt.length + ' 字'),
+      h(ExpandableText, { key: 'text', text: turn.prompt, limit: 800 }),
     ]) : null,
-    turn.text || turn.reasoning ? h('div', { className: 'dsr-turn__block', key: 'say' }, [
-      h('span', { className: 'dsr-turn__blocktitle', key: 'title' }, '这一轮干了什么'),
-      h('p', { className: 'dsr-turn__text', key: 'text' }, turn.text || turn.reasoning),
+    turn.text ? h('div', { className: 'dsr-turn__block', key: 'say' }, [
+      h('span', { className: 'dsr-turn__blocktitle', key: 'title' }, 'AI 回复 · ' + turn.text.length + ' 字'),
+      h(ExpandableText, { key: 'text', text: turn.text, limit: 640 }),
+    ]) : null,
+    turn.reasoning ? h('div', { className: 'dsr-turn__block', key: 'why' }, [
+      h('span', { className: 'dsr-turn__blocktitle', key: 'title' }, 'thinking · ' + turn.reasoning.length + ' 字'),
+      h(ExpandableText, { key: 'text', text: turn.reasoning, limit: 520 }),
     ]) : null,
     files.length > 0 ? h('div', { className: 'dsr-turn__block', key: 'files' }, [
       h('span', { className: 'dsr-turn__blocktitle', key: 'title' }, '改动的文件 · ' + files.length + ' 个'),
@@ -1685,6 +1748,7 @@ function TurnRow(props) {
         return h(TurnFilePill, { key: item.path, item: item, onPreview: props.onPreview });
       })),
     ]) : null,
+    forkAction,
   ]) : null;
   return h('div', {
     className: 'dsr-turn',
@@ -1697,8 +1761,6 @@ function TurnRow(props) {
     h('div', { className: 'dsr-turn__body', key: 'body' }, [head, digestLine, chips, panel]),
   ]);
 }
-
-const TURN_TREE_DEFAULT_VISIBLE = 12;
 
 /** Round rail: every round is one click away, so long sessions stay navigable. */
 function TurnNav(props) {
@@ -1740,15 +1802,15 @@ function SessionFlow(props) {
   const domPrefix = 'dsr-turn-' + String(entryId).replace(/[^a-zA-Z0-9_-]/g, '') + '-';
   const lastIndex = turns.length > 0 ? turns[turns.length - 1].index : -1;
   const [openSet, setOpenSet] = useState(null);
-  const [showAll, setShowAll] = useState(false);
   const [active, setActive] = useState(-1);
   useEffect(function () {
     setOpenSet(null);
-    setShowAll(false);
     setActive(-1);
   }, [entryId]);
   if (turns.length === 0) return null;
-  const visible = showAll ? turns : turns.slice(-TURN_TREE_DEFAULT_VISIBLE);
+  // The whole transcript is always on screen: a tree that hides rounds is not a
+  // tree you can read.
+  const visible = turns;
   const isOpen = function (index) { return openSet === null ? index === lastIndex : openSet.has(index); };
   const toggle = function (index) {
     const next = new Set(openSet === null ? [lastIndex] : openSet);
@@ -1763,7 +1825,6 @@ function SessionFlow(props) {
     const next = new Set(openSet === null ? [lastIndex] : openSet);
     next.add(index);
     setOpenSet(next);
-    setShowAll(true);
     setActive(index);
     setTimeout(function () {
       const node = document.getElementById(domPrefix + index);
@@ -1776,6 +1837,29 @@ function SessionFlow(props) {
   };
   const totalFiles = turns.reduce(function (sum, turn) { return sum + (Array.isArray(turn.deliverables) ? turn.deliverables.length : 0); }, 0);
   const current = active >= 0 ? active : lastIndex;
+  const fork = props.fork && props.fork.sessionId === entryId ? props.fork : null;
+  const forkBusy = fork !== null && fork.status === 'running';
+  const forkNotice = fork === null || fork.status === 'idle' ? null : h('div', {
+    className: cx('dsr-forknote', fork.status === 'done' && 'is-done', fork.status === 'error' && 'is-error'),
+    key: 'forknote',
+    role: 'status',
+  }, [
+    h(Icon, { name: fork.status === 'error' ? 'warning' : fork.status === 'done' ? 'check' : 'branch', size: 12, key: 'icon' }),
+    h('span', { className: 'dsr-forknote__text', key: 'text' }, fork.status === 'running'
+      ? (fork.turn > 0 ? '正在从第 ' + fork.turn + ' 轮分叉…' : '正在分叉…')
+      : fork.status === 'done'
+        ? (fork.turn > 0 ? '已从第 ' + fork.turn + ' 轮分叉出新会话，下面会话树里就能看到' : '已分叉出新会话，下面会话树里就能看到')
+        : (fork.error || '分叉失败')),
+    fork.status === 'done' && fork.childId && typeof props.onOpenFork === 'function' ? h('button', {
+      type: 'button', key: 'open', className: 'dsr-forknote__open',
+      onClick: function () { props.onOpenFork(fork.childId); },
+    }, '打开新会话') : null,
+    props.onDismissFork ? h('button', {
+      type: 'button', key: 'close', className: 'dsr-forknote__close',
+      title: '关闭提示', 'aria-label': '关闭分叉提示',
+      onClick: props.onDismissFork,
+    }, h(Icon, { name: 'close', size: 10 })) : null,
+  ]);
   return h('section', { className: 'dsr-detail__section dsr-flow-section' }, [
     h('div', { className: 'dsr-detail__section-head', key: 'head' }, [
       h('h3', { className: 'dsr-detail__section-title', key: 'title' }, [
@@ -1785,6 +1869,7 @@ function SessionFlow(props) {
       h('button', { type: 'button', className: 'dsr-flow__tool', key: 'all', onClick: expandAll }, allOpen ? '全部收起' : '全部展开'),
       h('span', { className: 'dsr-detail__section-meta', key: 'meta' }, turns.length + ' 轮 · ' + totalFiles + ' 个文件改动'),
     ]),
+    forkNotice,
     h(TurnNav, { key: 'nav', turns: turns, active: current, onJump: jump }),
     h(FlowStrip, { key: 'strip', turns: visible }),
     h('div', { className: 'dsr-flow', key: 'flow' }, visible.map(function (turn) {
@@ -1795,53 +1880,94 @@ function SessionFlow(props) {
         expanded: isOpen(turn.index),
         onToggle: function () { toggle(turn.index); },
         onPreview: props.onPreview,
+        canFork: props.canFork,
+        forking: forkBusy && fork !== null && fork.turn === turn.index,
+        onFork: props.onFork,
       });
     })),
-    turns.length > visible.length ? h('button', { type: 'button', className: 'dsr-flow__more', key: 'more', onClick: function () { setShowAll(true); } }, '展开更早的 ' + (turns.length - visible.length) + ' 轮对话') : null,
-    showAll && turns.length > TURN_TREE_DEFAULT_VISIBLE ? h('button', { type: 'button', className: 'dsr-flow__more', key: 'less', onClick: function () { setShowAll(false); } }, '只看最近 ' + TURN_TREE_DEFAULT_VISIBLE + ' 轮') : null,
   ]);
 }
 
 /**
- * Parent/child branches of this session: a subagent run is a branch of the
- * session that spawned it. One row per branch, with open and pin actions.
+ * The lineage tree around this session: the topmost ancestor at the root, then
+ * every fork and subagent child nested underneath. Nodes with children fold
+ * away, and the session being read is marked so the branch is easy to place.
  */
-function BranchSection(props) {
+function SessionTreeSection(props) {
   const entry = props.entry;
   const entries = Array.isArray(props.entries) ? props.entries : [];
-  const branches = sessionBranches(entries, entry.id);
-  if (!branches.parent && branches.children.length === 0) return null;
-  const row = function (target, role) {
-    return h('div', { className: 'dsr-branch', key: role + '-' + target.id, 'data-state': target.status }, [
+  const [collapsed, setCollapsed] = useState([]);
+  const entryId = entry.id;
+  useEffect(function () { setCollapsed([]); }, [entryId]);
+  const tree = sessionTree(entries, entryId, { collapsed: collapsed });
+  if (tree.rows.length === 0) return null;
+  const self = tree.rows.find(function (row) { return row.id === entryId; });
+  const hasLineage = tree.rows.length > 1;
+  if (!hasLineage && !(self && self.children > 0)) return null;
+  const forks = tree.rows.filter(function (row) { return row.kind === 'fork'; }).length;
+  const subagents = tree.rows.filter(function (row) { return row.kind === 'subagent'; }).length;
+  const toggle = function (id) {
+    setCollapsed(function (prev) {
+      return prev.indexOf(id) >= 0 ? prev.filter(function (item) { return item !== id; }) : prev.concat([id]);
+    });
+  };
+  const meta = [];
+  if (forks > 0) meta.push(forks + ' 个分叉');
+  if (subagents > 0) meta.push(subagents + ' 个子代理');
+  if (meta.length === 0) meta.push('单条会话');
+  const highlightId = typeof props.highlightId === 'string' ? props.highlightId : '';
+  const rows = tree.rows.map(function (row) {
+    const target = row.entry;
+    const label = target.title || target.id;
+    const isCurrent = row.current;
+    const isNew = highlightId !== '' && row.id === highlightId;
+    return h('div', {
+      className: cx('dsr-tree__row', isCurrent && 'is-current', isNew && 'is-new', 'is-' + row.kind),
+      key: 'tree-' + row.id,
+      'data-depth': String(row.depth),
+      'data-kind': row.kind,
+      'data-session': row.id,
+      style: { paddingLeft: 2 + row.depth * 14 + 'px' },
+    }, [
+      row.children > 0 ? h('button', {
+        type: 'button', key: 'chev', className: cx('dsr-tree__chev', row.collapsed && 'is-collapsed'),
+        'aria-expanded': row.collapsed ? 'false' : 'true',
+        title: (row.collapsed ? '展开' : '收起') + row.children + ' 个下游会话',
+        onClick: function () { toggle(row.id); },
+      }, h(Icon, { name: row.collapsed ? 'chevron-right' : 'chevron-down', size: 10 })) : h('span', { className: 'dsr-tree__bullet', key: 'bullet', 'aria-hidden': 'true' }),
       h('button', {
-        type: 'button', className: 'dsr-branch__open', key: 'open',
-        title: '查看 ' + target.title,
-        onClick: function () { if (props.onSelect) props.onSelect(target.id); },
+        type: 'button', key: 'open', className: 'dsr-tree__open',
+        title: '查看 ' + label,
+        'aria-current': isCurrent ? 'true' : undefined,
+        onClick: function () { if (props.onSelect) props.onSelect(row.id); },
       }, [
-        h(Icon, { name: role === 'parent' ? 'arrow-left' : 'branch', size: 11, key: 'i' }),
-        h('span', { className: 'dsr-branch__role', key: 'role' }, role === 'parent' ? '父会话' : '分支'),
-        h('span', { className: 'dsr-branch__title', key: 'title' }, target.title),
-        h('span', { className: 'dsr-branch__meta', key: 'meta' }, (target.statusLabel || '') + (target.turn > 0 ? ' · ' + target.turn + ' 轮' : '')),
+        h('span', { className: cx('dsr-tree__kind', 'is-' + row.kind), key: 'kind' }, TREE_KIND_TEXT[row.kind] || row.kind),
+        h('span', { className: 'dsr-tree__title', key: 'title' }, label),
+        isNew ? h('span', { className: 'dsr-tree__new', key: 'new', title: '刚刚从这一轮分叉出的会话' }, '新') : null,
+        h('span', { className: 'dsr-tree__meta', key: 'meta' }, [
+          target.statusLabel || target.status || '',
+          target.turn > 0 ? ' · ' + target.turn + ' 轮' : '',
+          row.children > 0 ? ' · ' + row.children + ' 分支' : '',
+        ].join('')),
       ]),
       h('button', {
-        type: 'button', className: cx('dsr-branch__pin', target.pinned && 'is-active'), key: 'pin',
-        title: target.pinned ? '取消固定' : '固定到快捷栏', 'aria-label': target.pinned ? '取消固定' : '固定到快捷栏',
-        onClick: function () { props.controller.togglePin(target.id); },
+        type: 'button', key: 'pin', className: cx('dsr-tree__pin', target.pinned && 'is-active'),
+        title: target.pinned ? '取消固定' : '固定到快捷栏',
+        'aria-label': (target.pinned ? '取消固定 ' : '固定到快捷栏 ') + label,
+        'aria-pressed': target.pinned ? 'true' : 'false',
+        onClick: function () { props.controller.togglePin(row.id); },
       }, h(Icon, { name: target.pinned ? 'pin-filled' : 'pin', size: 11 })),
     ]);
-  };
-  const rows = [];
-  if (branches.parent) rows.push(row(branches.parent, 'parent'));
-  for (const child of branches.children) rows.push(row(child, 'child'));
-  return h('section', { className: 'dsr-detail__section', key: 'branches' }, [
+  });
+  return h('section', { className: 'dsr-detail__section dsr-tree-section', key: 'tree' }, [
     h('div', { className: 'dsr-detail__section-head', key: 'head' }, [
       h('h3', { className: 'dsr-detail__section-title', key: 'title' }, [
         h(Icon, { name: 'branch', size: 12, key: 'i' }),
-        h('span', { key: 't' }, '分支关系'),
+        h('span', { key: 't' }, '会话树'),
       ]),
-      h('span', { className: 'dsr-detail__section-meta', key: 'meta' }, branches.children.length > 0 ? branches.children.length + ' 个分支' : '所属父会话'),
+      h('span', { className: 'dsr-detail__section-meta', key: 'meta' }, meta.join(' · ')),
     ]),
-    h('div', { className: 'dsr-branches', key: 'rows' }, rows),
+    h('div', { className: 'dsr-tree', key: 'tree', role: 'tree', 'aria-label': '会话谱系' }, rows),
   ]);
 }
 
@@ -1855,8 +1981,13 @@ function DetailPanel(props) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [reportCopied, setReportCopied] = useState(false);
-  const [full, setFull] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const full = props.full === true;
+  const setFull = function (value) {
+    const next = value === true;
+    if (typeof props.onFull === 'function') props.onFull(next);
+    else if (typeof controller.setDetailFull === 'function') controller.setDetailFull(next);
+  };
   useEffect(function () {
     setConfirmStop(false);
     setRenaming(false);
@@ -1864,7 +1995,6 @@ function DetailPanel(props) {
     setFeedback('');
     setCopied(false);
     setReportCopied(false);
-    setFull(false);
   }, [entry && entry.id]);
   useEffect(function () {
     if (!full) return;
@@ -1904,6 +2034,12 @@ function DetailPanel(props) {
     catch (error) { setFeedback(error instanceof Error ? error.message : String(error)); }
     finally { setBusy(false); }
   };
+  const forkRound = async function (turn) {
+    if (typeof controller.forkFromTurn !== 'function') { setFeedback('当前宿主没有提供分叉能力'); return; }
+    setFeedback('');
+    try { await controller.forkFromTurn(entry.id, turn.lastSeq, turn.index); }
+    catch (error) { setFeedback(error instanceof Error ? error.message : String(error)); }
+  };
   const saveRename = async function () {
     setBusy(true);
     setFeedback('');
@@ -1936,9 +2072,25 @@ function DetailPanel(props) {
         h('div', { className: 'dsr-detail__section-head', key: 'head' }, [h('h3', { className: 'dsr-detail__section-title', key: 'title' }, '当前状态'), h('span', { className: 'dsr-detail__section-meta', key: 'meta' }, entry.lastEventAt ? formatRelative(entry.lastEventAt, now) : '')]),
         h(CurrentState, { key: 'current', entry: entry }),
       ]),
-      h(SessionFlow, { key: 'flow', entry: entry, onPreview: function (item) { controller.previewFile(entry.id, item); } }),
+      h(SessionFlow, {
+        key: 'flow',
+        entry: entry,
+        onPreview: function (item) { controller.previewFile(entry.id, item); },
+        canFork: props.canFork !== false,
+        fork: props.fork,
+        onFork: function (turn) { forkRound(turn); },
+        onOpenFork: function (childId) { if (typeof props.onSelect === 'function') props.onSelect(childId); },
+        onDismissFork: function () { if (typeof controller.clearForkNotice === 'function') controller.clearForkNotice(); },
+      }),
       h(PlanSection, { key: 'plan', entry: entry }),
-      h(BranchSection, { key: 'branches', entry: entry, entries: props.entries, onSelect: props.onSelect, controller: controller }),
+      h(SessionTreeSection, {
+        key: 'tree',
+        entry: entry,
+        entries: props.entries,
+        onSelect: props.onSelect,
+        controller: controller,
+        highlightId: props.fork && props.fork.status === 'done' ? props.fork.childId : '',
+      }),
       h(DeliverablesSection, { key: 'files', entry: entry, controller: controller }),
       h(OutputSection, { key: 'output', entry: entry }),
     ]),
@@ -2045,6 +2197,12 @@ function SessionCard(props) {
       const target = event.target;
       if (target && target.closest && target.closest('button')) return;
       props.onSelect(entry.id);
+    },
+    onDoubleClick: function (event) {
+      const target = event.target;
+      if (target && target.closest && target.closest('button')) return;
+      if (typeof props.onOpenFull === 'function') props.onOpenFull(entry.id);
+      else props.onSelect(entry.id);
     },
   }, [
     entry.unread ? h(ReviewDot, { key: 'review' }) : null,
@@ -2207,7 +2365,7 @@ function PageLiveView(props) {
         children: h('span', { className: 'dsr-board__count', key: 'count' }, tracked.length + ' 个'),
       }),
       h('div', { className: 'dsr-card-grid dsr-card-grid--tracked', key: 'grid' }, tracked.map(function (entry) {
-        return h(SessionCard, { key: entry.id, entry: entry, now: props.now, compact: state.prefs.compact, selected: props.selectedId === entry.id, onSelect: props.onSelect, onOpen: props.onOpen, onPin: props.onPin });
+        return h(SessionCard, { key: entry.id, entry: entry, now: props.now, compact: state.prefs.compact, selected: props.selectedId === entry.id, onSelect: props.onSelect, onOpenFull: props.onOpenFull, onOpen: props.onOpen, onPin: props.onPin });
       })),
     ]) : null,
     h('section', { className: 'dsr-board__section dsr-board__section--active', key: 'active' }, [
@@ -2221,7 +2379,7 @@ function PageLiveView(props) {
       active.length === 0
         ? h('div', { className: 'dsr-board__quiet', key: 'empty' }, [h(RadarGlyph, { key: 'glyph', size: 19 }), h('span', { key: 'copy' }, '当前没有运行中的任务，最近的记录在下方。')])
         : h('div', { className: 'dsr-card-grid dsr-card-grid--live', key: 'grid' }, active.map(function (entry) {
-          return h(SessionCard, { key: entry.id, entry: entry, now: props.now, compact: state.prefs.compact, selected: props.selectedId === entry.id, onSelect: props.onSelect, onOpen: props.onOpen, onPin: props.onPin });
+          return h(SessionCard, { key: entry.id, entry: entry, now: props.now, compact: state.prefs.compact, selected: props.selectedId === entry.id, onSelect: props.onSelect, onOpenFull: props.onOpenFull, onOpen: props.onOpen, onPin: props.onPin });
         })),
     ]),
     h('section', { className: 'dsr-board__section dsr-board__section--recent', key: 'recent' }, [
@@ -2235,7 +2393,7 @@ function PageLiveView(props) {
       tail.length === 0
         ? h('div', { className: 'dsr-board__quiet', key: 'empty' }, h('span', { key: 'copy' }, '还没有最近会话。'))
         : h('div', { className: 'dsr-card-grid', key: 'grid' }, tail.map(function (entry) {
-          return h(SessionCard, { key: entry.id, entry: entry, now: props.now, compact: state.prefs.compact, selected: props.selectedId === entry.id, onSelect: props.onSelect, onOpen: props.onOpen, onPin: props.onPin });
+          return h(SessionCard, { key: entry.id, entry: entry, now: props.now, compact: state.prefs.compact, selected: props.selectedId === entry.id, onSelect: props.onSelect, onOpenFull: props.onOpenFull, onOpen: props.onOpen, onPin: props.onPin });
         })),
     ]),
     h('div', { className: 'dsr-board__foot', key: 'foot' }, '数据来自 Session Controller · token / 上下文来自投影 · 本轮与总计按事件及 sessionStats 计算'),
@@ -2289,6 +2447,8 @@ function HistorySessionCard(props) {
       type: 'button',
       className: 'dsr-history-card__main',
       onClick: function () { props.onSelect(entry.id); },
+      onDoubleClick: function () { if (typeof props.onOpenFull === 'function') props.onOpenFull(entry.id); },
+      title: '查看详情' + (typeof props.onOpenFull === 'function' ? '（双击全屏）' : ''),
       key: 'main',
     }, [
       h('span', { className: 'dsr-history-card__title', key: 'title', title: entry.title }, [
@@ -2484,7 +2644,7 @@ function WorkspaceBoard(props) {
         : h('div', { className: 'dsr-history-grid', key: 'grid' }, visibleSessions.map(function (entry) {
           return h(HistorySessionCard, {
             key: entry.id, entry: entry, now: now, checked: picked.includes(entry.id),
-            onToggle: toggle, onSelect: props.onSelect, onOpen: props.onOpen,
+            onToggle: toggle, onSelect: props.onSelect, onOpenFull: props.onOpenFull, onOpen: props.onOpen,
           });
         })),
       h(BulkBar, {
@@ -2512,7 +2672,7 @@ function WorkspaceBoard(props) {
         : h('div', { className: 'dsr-history-grid', key: 'grid' }, (showAllArchived ? archivedEntries : archivedEntries.slice(0, 12)).map(function (entry) {
           return h(HistorySessionCard, {
             key: entry.id, entry: entry, now: now, checked: archivedPicked.includes(entry.id),
-            onToggle: toggleArchived, onSelect: props.onSelect, onOpen: undefined,
+            onToggle: toggleArchived, onSelect: props.onSelect, onOpenFull: props.onOpenFull, onOpen: undefined,
             onDelete: function (id) { askDelete([id]); },
           });
         })),
@@ -2556,7 +2716,14 @@ function UsageView(props) {
       value: range, options: TIME_FILTERS, defaultValue: props.state.prefs && props.state.prefs.defaultRange || '7d', onChange: chooseRange,
     })),
     h('div', { className: 'dsr-usage-grid', key: 'grid' }, sorted.map(function (entry) {
-      return h('button', { type: 'button', className: 'dsr-usage-card', key: entry.id, title: entry.title + ' · ' + formatExactNumber(entry.tokenTotal) + ' token · 本轮 ' + formatExactDuration(entry.turnTimeMs) + ' · 总计 ' + formatExactDuration(entry.totalTimeMs), onClick: function () { props.onSelect(entry.id); } }, [
+      return h('button', {
+        type: 'button',
+        className: 'dsr-usage-card',
+        key: entry.id,
+        title: entry.title + ' · ' + formatExactNumber(entry.tokenTotal) + ' token · 本轮 ' + formatExactDuration(entry.turnTimeMs) + ' · 总计 ' + formatExactDuration(entry.totalTimeMs),
+        onClick: function () { props.onSelect(entry.id); },
+        onDoubleClick: function () { if (typeof props.onOpenFull === 'function') props.onOpenFull(entry.id); },
+      }, [
         h('span', { className: 'dsr-usage-card__title', key: 'title' }, entry.title),
         h('span', { className: 'dsr-usage-card__meta', key: 'meta' }, entry.workspace + (entry.model ? ' · ' + entry.model : '')),
         h('span', { className: 'dsr-usage-card__big', key: 'big' }, formatTokens(entry.tokenTotal), h('small', { key: 'unit' }, ' tok')),
@@ -3166,6 +3333,9 @@ function RadarPage(props) {
     return function () { window.removeEventListener('keydown', close, true); };
   }, [settingsOpen, controller]);
   const onSelect = function (id) { if (state.ui.prefsOpen) controller.togglePrefs(); setSelectedId(id); controller.markRead(id); };
+  // A double click always means "blow this session up": bring it into the side
+  // panel first when it is not the one on show, then open the dialog.
+  const onOpenFull = function (id) { onSelect(id); controller.setDetailFull(true); };
   const onOpen = function (id) { controller.openSession(id); };
   const onPin = function (id) { controller.togglePin(id); };
   const workspaceCount = state.workspaces ? state.workspaces.length : 0;
@@ -3225,7 +3395,7 @@ function RadarPage(props) {
         view === 'live' ? h(PageLiveView, {
           key: 'live', entries: filtered, active: active, recent: recent, state: state, now: now, selectedId: selectedId, defaultRange: state.prefs.defaultRange || '7d',
           sort: sortMode, onSort: setSortMode,
-          onSelect: onSelect, onOpen: onOpen, onPin: onPin,
+          onSelect: onSelect, onOpenFull: onOpenFull, onOpen: onOpen, onPin: onPin,
           onNew: function () { controller.startSession(); },
           onFilter: function (key, value) { controller.setFilter(key, value); },
           onClearFilters: function () { controller.clearFilters(); },
@@ -3233,10 +3403,10 @@ function RadarPage(props) {
         view === 'workspaces' ? h(WorkspaceBoard, {
           key: 'workspaces', state: state, controller: controller, now: now,
           focusId: state.ui.workspaceFocus, focusAt: state.ui.workspaceFocusAt,
-          onSelect: onSelect, onOpen: onOpen, onPin: onPin,
+          onSelect: onSelect, onOpenFull: onOpenFull, onOpen: onOpen, onPin: onPin,
           onShowStats: function (scope) { if (typeof controller.showStatisticsFor === 'function') controller.showStatisticsFor(scope); },
         }) : null,
-        view === 'usage' ? h(UsageView, { key: 'usage', entries: filterEntries(state.entries, state.ui.query), state: state, controller: controller, now: now, onSelect: onSelect }) : null,
+        view === 'usage' ? h(UsageView, { key: 'usage', entries: filterEntries(state.entries, state.ui.query), state: state, controller: controller, now: now, onSelect: onSelect, onOpenFull: onOpenFull }) : null,
         view === 'activity' ? h(ActivityView, { key: 'activity', state: state, controller: controller, now: now, onSelect: onSelect }) : null,
         view === 'search' ? h(PageSearchView, { key: 'search', state: state, controller: controller, onOpen: onOpen }) : null,
       ]),
@@ -3244,7 +3414,7 @@ function RadarPage(props) {
         h(PrefsSidebar, { controller: controller, prefs: state.prefs, state: state, variant: 'page', onClose: function () { controller.togglePrefs(); } })
       ) : null,
       selected && !settingsOpen ? h('aside', { className: 'dsr-page__detail', key: 'detail', 'aria-label': '会话详情' },
-        h(DetailPanel, { key: selected.id, entry: selected, controller: controller, now: now, variant: 'page', entries: selectedPool, onSelect: function (id) { setSelectedId(id); }, onBack: function () { setSelectedId(null); } })
+        h(DetailPanel, { key: selected.id, entry: selected, controller: controller, now: now, variant: 'page', entries: selectedPool, fork: state.fork, canFork: state.canFork !== false, full: state.detailFull === true, onFull: function (value) { controller.setDetailFull(value); }, onSelect: function (id) { setSelectedId(id); }, onBack: function () { setSelectedId(null); } })
       ) : null,
     ]),
   ]);

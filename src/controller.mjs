@@ -268,6 +268,8 @@ export class RadarController {
       statisticsFocus: null,
       statisticsFocusAt: 0,
       prefsOpen: false,
+      detailFull: false,
+      fork: { status: 'idle', sessionId: '', atSeq: 0, childId: '', error: '' },
       bulk: { status: 'idle', action: null, message: '', error: '', ids: [] },
     };
     this.lastRunning = new Map();
@@ -684,6 +686,7 @@ export class RadarController {
 
   close() {
     this.ui.open = false;
+    this.ui.detailFull = false;
     this.publish();
   }
 
@@ -732,8 +735,37 @@ export class RadarController {
     this.publishSoon();
   }
 
+  /** One click: bring the session up in the side panel. */
+  openDetail(id) {
+    if (this.ui.prefsOpen) this.ui.prefsOpen = false;
+    this.ui.open = true;
+    this.ui.detailFull = false;
+    this.select(id);
+  }
+
+  /** Two clicks: the same detail, blown up to a full-screen dialog. */
+  openFullDetail(id) {
+    if (this.ui.prefsOpen) this.ui.prefsOpen = false;
+    this.ui.open = true;
+    this.select(id);
+    this.ui.detailFull = true;
+    this.publish();
+  }
+
+  setDetailFull(value) {
+    const next = value === true;
+    if (this.ui.detailFull === next) return;
+    this.ui.detailFull = next;
+    this.publish();
+  }
+
+  toggleDetailFull() {
+    this.setDetailFull(!this.ui.detailFull);
+  }
+
   select(id) {
     this.ui.selectedId = id;
+    this.ui.detailFull = false;
     this.markRead(id);
     const row = this.rows.get(id);
     if (row?.running === true) this.ensureWatch(id);
@@ -1310,6 +1342,65 @@ export class RadarController {
     }
   }
 
+  /** Whether the host exposes the fork primitive at all. */
+  canFork() {
+    return this.sessions !== undefined && this.sessions !== null && typeof this.sessions.fork === 'function';
+  }
+
+  /**
+   * Fork the session at the end of one round. The host slices the log at that
+   * exact event seq, closes the inherited tail with synthetic closers, names the
+   * child after the source and returns its id; the new branch is then selected
+   * here so the panel shows where it landed.
+   */
+  async forkFromTurn(sessionId, atSeq, turnIndex) {
+    const seq = Number(atSeq) || 0;
+    const id = String(sessionId || '');
+    if (id === '' || !this.canFork()) {
+      this.ui.fork = { status: 'error', sessionId: id, atSeq: seq, childId: '', error: '当前宿主没有提供分叉能力' };
+      this.publish();
+      return null;
+    }
+    if (!(seq > 0)) {
+      this.ui.fork = { status: 'error', sessionId: id, atSeq: 0, childId: '', error: '这一轮还没有可用的日志位置，等它结束后再分叉' };
+      this.publish();
+      return null;
+    }
+    if (this.forkBusy === true) return null;
+    this.forkBusy = true;
+    this.ui.fork = { status: 'running', sessionId: id, atSeq: seq, childId: '', error: '', turn: Number(turnIndex) || 0 };
+    this.publish();
+    try {
+      const childId = await this.sessions.fork({ sessionId: id, atSeq: seq, increaseTitle: true });
+      const child = String(childId || '');
+      this.ui.fork = { status: 'done', sessionId: id, atSeq: seq, childId: child, error: '', turn: Number(turnIndex) || 0 };
+      // Stay on the source session: the new branch shows up in its tree, and the
+      // notice offers the jump, so the reader keeps the context they forked from.
+      await this.refresh();
+      return child;
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : String(error);
+      const unavailable = error instanceof Error && error.name === 'SessionForkError' && error.rpcError && error.rpcError.code === 'session/fork-unavailable';
+      this.ui.fork = {
+        status: 'error',
+        sessionId: id,
+        atSeq: seq,
+        childId: '',
+        error: unavailable ? '这一轮还不能分叉（宿主没有可继承的对话前缀）' : '分叉失败：' + raw,
+        turn: Number(turnIndex) || 0,
+      };
+      return null;
+    } finally {
+      this.forkBusy = false;
+      this.publish();
+    }
+  }
+
+  clearForkNotice() {
+    this.ui.fork = { status: 'idle', sessionId: '', atSeq: 0, childId: '', error: '' };
+    this.publish();
+  }
+
   async rename(id, title) {
     const clean = String(title || '').trim();
     if (clean === '') throw new Error('名称不能为空');
@@ -1489,6 +1580,9 @@ export class RadarController {
       ui: { ...this.ui, filters: { ...this.ui.filters }, searchResults: this.ui.searchResults.slice(), bulk: { ...this.ui.bulk } },
       currentId: this.currentMainId() || null,
       prefs: { ...this.prefs },
+      fork: { ...this.ui.fork },
+      detailFull: this.ui.detailFull === true,
+      canFork: this.canFork(),
       stallAfterMs: this.stallAfterMs(),
       phase: this.rosterPhase,
       streaming: [...this.watches.values()].some(watch => watch.stream === 'reconnecting') ? 'reconnecting' : [...this.watches.values()].some(watch => watch.stream === 'live') ? 'live' : 'idle',

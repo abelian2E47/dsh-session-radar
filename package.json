@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-radar",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "description": "Session radar for DSH: right-edge quick launch bar, live session telemetry with stall and approval-wait alerts, token throughput, status filters and sort orders, workspace history and pins, a per-round conversation tree with one-line round summaries, round jumping, full-screen detail and parent/child branch navigation, plus statistics over an arbitrary custom window with range-scoped token spend, a workspaces/sessions scope picker, and wall-clock duration instead of a sum of sessions.",
   "icon": "icon.svg",
