@@ -949,6 +949,9 @@ export function deriveEntry(row, telemetry, options = {}) {
     workspace: options.workspace || '',
     origin: row?.origin || telemetry.origin,
     parentId: row?.parentId || telemetry.parentId,
+    // DSH keeps ordinary forks out of parentId: the branch facts live in the
+    // row's forkLineage projection, so the tree has to read them from there.
+    forkSource: forkSourceOf(row) || telemetry.forkSource || '',
     blank: row?.blank === true,
     running: row === undefined || row === null ? telemetry.running === true : row.running === true,
     current: (row?.retainedBy?.mainView ?? 0) > 0,
@@ -2027,14 +2030,29 @@ export const TREE_KIND_TEXT = { root: '根会话', fork: '分叉', subagent: '�
  * caller has collapsed. Rows are what the panel draws; nothing here mutates the
  * entries or depends on their order in the ledger.
  */
+/** Session a row was forked from, from whichever field carries it. */
+function forkSourceOf(row) {
+  if (!isRecord(row)) return '';
+  const direct = typeof row.forkSource === 'string' ? row.forkSource : '';
+  if (direct !== '') return direct;
+  const values = isRecord(row.projectionValues) ? row.projectionValues : null;
+  const lineage = values !== null && isRecord(values.forkLineage) ? values.forkLineage : null;
+  const source = lineage !== null && typeof lineage.sourceSessionId === 'string' ? lineage.sourceSessionId : '';
+  return source;
+}
+
 export function sessionTree(entries, id, options = {}) {
   const list = (Array.isArray(entries) ? entries : []).filter(entry => isRecord(entry) && typeof entry.id === 'string' && entry.id !== '');
   const byId = new Map();
   for (const entry of list) if (!byId.has(entry.id)) byId.set(entry.id, entry);
   const currentId = typeof id === 'string' ? id : '';
   const parentOf = entry => {
-    const parent = typeof entry.parentId === 'string' ? entry.parentId : '';
-    return parent !== '' && parent !== entry.id && byId.has(parent) ? parent : '';
+    const candidates = [entry.parentId, entry.forkSource, forkSourceOf(entry)];
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string' || candidate === '' || candidate === entry.id) continue;
+      if (byId.has(candidate)) return candidate;
+    }
+    return '';
   };
   if (!byId.has(currentId)) return { rootId: '', currentId, rows: [], total: 0 };
   let rootId = currentId;

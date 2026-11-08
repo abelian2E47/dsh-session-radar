@@ -889,4 +889,49 @@ test('activity statistics honour a workspace or session scope', () => {
   assert.equal(buckets.totalTokens, 700);
 });
 
+test('links ordinary forks through the forkLineage projection, not parentId', () => {
+  // DSH keeps ordinary forks out of parentId; the branch facts arrive in the row's
+  // projection values. The tree has to follow that link or the panel shows nothing.
+  const root = row({ id: 'a', title: '根会话', updatedAt: 3_000 });
+  const fork = row({
+    id: 'b',
+    title: '分叉副本',
+    origin: 'fork',
+    parentId: undefined,
+    projectionValues: { forkLineage: { origin: 'fork', sourceSessionId: 'a' } },
+    updatedAt: 2_000,
+  });
+  const child = row({ id: 'c', title: '子代理', origin: 'subagent', parentId: 'a', updatedAt: 1_000 });
+  const entries = [root, fork, child];
 
+  const tree = sessionTree(entries, 'a', {});
+  assert.equal(tree.rootId, 'a');
+  // Children of the root are ordered newest first: the fork, then the subagent.
+  assert.deepEqual(tree.rows.map(item => item.id), ['a', 'b', 'c']);
+  assert.deepEqual(tree.rows.map(item => item.kind), ['root', 'fork', 'subagent']);
+
+  const fromFork = sessionTree(entries, 'b', {});
+  assert.equal(fromFork.rootId, 'a');
+  assert.equal(fromFork.rows.find(item => item.id === 'b').depth, 1);
+  assert.equal(fromFork.rows.find(item => item.id === 'b').current, true);
+
+  const lone = sessionTree(entries, 'a', {});
+  const standalone = sessionTree([row({ id: 'solo' })], 'solo', {});
+  assert.equal(standalone.rows.length, 1);
+  assert.equal(standalone.rows[0].kind, 'root');
+  assert.equal(lone.rows.length, 3);
+});
+
+test('a derived entry carries the session its fork was cut from', () => {
+  const telemetry = createTelemetry();
+  const plain = deriveEntry(row({ id: 'p' }), telemetry, { now: Date.now() });
+  assert.equal(plain.forkSource, '');
+
+  const forked = deriveEntry(row({
+    id: 'f',
+    origin: 'fork',
+    projectionValues: { forkLineage: { origin: 'fork', sourceSessionId: 'p' } },
+  }), createTelemetry(), { now: Date.now() });
+  assert.equal(forked.forkSource, 'p');
+  assert.equal(forked.origin, 'fork');
+});

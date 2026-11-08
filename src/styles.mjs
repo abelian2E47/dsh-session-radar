@@ -1251,5 +1251,5 @@ button.dsr-flow__more:hover { color: var(--dsr-accent); }
 .dsr-tree__pin:hover { background: color-mix(in srgb, var(--dsr-text) 9%, transparent); }
 @media (max-width: 560px) { .dsr-scope__row-meta { display: none; } }
 
-`
-].join('\n');
+`,
+"\n/* Empty states: the transcript and lineage sections stay findable even when the\n   data is not in yet, so neither tree just disappears. */\n.dsr-flow__empty {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 10px 12px;\n  border: 1px dashed color-mix(in oklab, currentColor 22%, transparent);\n  border-radius: 10px;\n}\n.dsr-flow__empty-text {\n  margin: 0;\n  font-size: 11.5px;\n  line-height: 1.6;\n  opacity: 0.72;\n}\n.dsr-tree__hint {\n  margin: 0 0 8px;\n  font-size: 11.5px;\n  line-height: 1.6;\n  opacity: 0.66;\n}\n",].join('\n');

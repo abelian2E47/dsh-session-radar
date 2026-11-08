@@ -1185,6 +1185,17 @@ export class RadarController {
     return job;
   }
 
+  /** Re-read one session's history when the panel came up empty. */
+  reloadHistory(id) {
+    if (this.disposed) return;
+    const key = typeof id === 'string' ? id : '';
+    if (key === '') return;
+    this.historyLoaded.delete(key);
+    this.historyLoading.delete(key);
+    this.queueHistory(key);
+    this.publishSoon();
+  }
+
   ensureActivityHistory() {
     const now = Date.now();
     if (now - this.activityScanAt < 60000) return;

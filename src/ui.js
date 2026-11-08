@@ -1807,9 +1807,26 @@ function SessionFlow(props) {
     setOpenSet(null);
     setActive(-1);
   }, [entryId]);
-  if (turns.length === 0) return null;
   // The whole transcript is always on screen: a tree that hides rounds is not a
   // tree you can read.
+  if (turns.length === 0) {
+    return h('section', { className: 'dsr-detail__section dsr-flow-section', key: 'flow' }, [
+      h('div', { className: 'dsr-detail__section-head', key: 'head' }, [
+        h('h3', { className: 'dsr-detail__section-title', key: 'title' }, [
+          h(Icon, { name: 'flow', size: 12, key: 'i' }),
+          h('span', { key: 't' }, '对话树'),
+        ]),
+        h('span', { className: 'dsr-detail__section-meta', key: 'meta' }, '0 轮'),
+      ]),
+      h('div', { className: 'dsr-flow__empty', key: 'empty' }, [
+        h('p', { className: 'dsr-flow__empty-text', key: 'text' }, '还没读到这一轮的记录。任务跑起来后这里会按轮次展开：每轮的指令、回复和改过的文件。'),
+        typeof props.onReload === 'function' ? h('button', {
+          type: 'button', className: 'dsr-button', key: 'reload',
+          onClick: function () { props.onReload(); },
+        }, '重新读取') : null,
+      ]),
+    ]);
+  }
   const visible = turns;
   const isOpen = function (index) { return openSet === null ? index === lastIndex : openSet.has(index); };
   const toggle = function (index) {
@@ -1900,10 +1917,8 @@ function SessionTreeSection(props) {
   const entryId = entry.id;
   useEffect(function () { setCollapsed([]); }, [entryId]);
   const tree = sessionTree(entries, entryId, { collapsed: collapsed });
-  if (tree.rows.length === 0) return null;
   const self = tree.rows.find(function (row) { return row.id === entryId; });
   const hasLineage = tree.rows.length > 1;
-  if (!hasLineage && !(self && self.children > 0)) return null;
   const forks = tree.rows.filter(function (row) { return row.kind === 'fork'; }).length;
   const subagents = tree.rows.filter(function (row) { return row.kind === 'subagent'; }).length;
   const toggle = function (id) {
@@ -1914,7 +1929,7 @@ function SessionTreeSection(props) {
   const meta = [];
   if (forks > 0) meta.push(forks + ' 个分叉');
   if (subagents > 0) meta.push(subagents + ' 个子代理');
-  if (meta.length === 0) meta.push('单条会话');
+  if (meta.length === 0) meta.push(tree.rows.length === 0 ? '暂无谱系' : '未分叉');
   const highlightId = typeof props.highlightId === 'string' ? props.highlightId : '';
   const rows = tree.rows.map(function (row) {
     const target = row.entry;
@@ -1959,6 +1974,10 @@ function SessionTreeSection(props) {
       }, h(Icon, { name: target.pinned ? 'pin-filled' : 'pin', size: 11 })),
     ]);
   });
+  const hint = hasLineage ? null : h('p', { className: 'dsr-tree__hint', key: 'hint' },
+    tree.rows.length === 0
+      ? '这条会话不在当前列表里，谱系读不到。刷新一下雷达再打开它。'
+      : '这条会话还没有分叉或子代理。在下面任意一轮点「从这一轮分叉」，新会话就会挂到这里的树上。');
   return h('section', { className: 'dsr-detail__section dsr-tree-section', key: 'tree' }, [
     h('div', { className: 'dsr-detail__section-head', key: 'head' }, [
       h('h3', { className: 'dsr-detail__section-title', key: 'title' }, [
@@ -1967,6 +1986,7 @@ function SessionTreeSection(props) {
       ]),
       h('span', { className: 'dsr-detail__section-meta', key: 'meta' }, meta.join(' · ')),
     ]),
+    hint,
     h('div', { className: 'dsr-tree', key: 'tree', role: 'tree', 'aria-label': '会话谱系' }, rows),
   ]);
 }
@@ -2078,6 +2098,7 @@ function DetailPanel(props) {
         onPreview: function (item) { controller.previewFile(entry.id, item); },
         canFork: props.canFork !== false,
         fork: props.fork,
+        onReload: function () { if (typeof controller.reloadHistory === 'function') controller.reloadHistory(entry.id); },
         onFork: function (turn) { forkRound(turn); },
         onOpenFork: function (childId) { if (typeof props.onSelect === 'function') props.onSelect(childId); },
         onDismissFork: function () { if (typeof controller.clearForkNotice === 'function') controller.clearForkNotice(); },
