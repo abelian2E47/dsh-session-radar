@@ -1,6 +1,7 @@
 {
  "entries": [
   {
+   "stallAfterMs": 300000,
    "id": "s1",
    "title": "支付回调重试改造",
    "cwd": "D:\\work\\payments-api",
@@ -284,6 +285,7 @@
    "deliveryState": "delivered"
   },
   {
+   "stallAfterMs": 300000,
    "id": "s2",
    "title": "结算页对比度修复",
    "cwd": "D:\\work\\payments-api",
@@ -546,6 +548,7 @@
    "deliveryState": "changed"
   },
   {
+   "stallAfterMs": 300000,
    "id": "s3",
    "title": "导出报表超时排查",
    "cwd": "D:\\work\\payments-api",
@@ -696,6 +699,7 @@
    "deliveryState": "none"
   },
   {
+   "stallAfterMs": 300000,
    "id": "s4",
    "title": "周报自动汇总",
    "cwd": "D:\\work\\ops-toolkit",
@@ -924,6 +928,7 @@
    "deliveryState": "delivered"
   },
   {
+   "stallAfterMs": 300000,
    "id": "s5",
    "title": "依赖升级兼容性核查",
    "cwd": "D:\\work\\ops-toolkit",
@@ -1271,6 +1276,7 @@
    "deliveryState": "none"
   },
   {
+   "stallAfterMs": 300000,
    "id": "s6",
    "title": "子代理 · 依赖版本比对",
    "cwd": "D:\\work\\payments-api",
@@ -1456,6 +1462,7 @@
    "parentId": "s5"
   },
   {
+   "stallAfterMs": 300000,
    "id": "s7",
    "title": "子代理 · 回调重试验证",
    "cwd": "D:\\work\\payments-api",
@@ -1977,8 +1984,12 @@
   "activityScope": {
    "workspaces": [],
    "sessions": []
-  }
+  },
+  "stallMinutes": 5,
+  "showSidebarPins": true,
+  "sidebarPinsOpen": true
  },
+ "stallAfterMs": 300000,
  "phase": "ready",
  "streaming": "live",
  "error": null,

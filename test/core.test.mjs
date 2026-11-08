@@ -28,6 +28,11 @@ import {
   formatTokens,
   isStalledEntry,
   matchesStatus,
+  normalizeStallMinutes,
+  normalizeStallMs,
+  sidebarPinSessions,
+  SIDEBAR_PIN_MAX,
+  STALL_MINUTES_DEFAULT,
   sessionReportMarkdown,
   sessionBranches,
   turnDigest,
@@ -518,17 +523,84 @@ test('waiting, stall and throughput signals come from the event log', () => {
   assert.equal(deriveEntry(row(), t, { now: 65_000 }).waitingMs, 0);
 });
 
-test('a live session that stops emitting events is reported as stalled', () => {
+test('a running tool call is only flagged once it passes the safety window', () => {
   const t = createTelemetry(row());
   reduceEvent(t, event('turn/start', 1, {}, 10_000));
   reduceEvent(t, event('tool/call', 2, { name: 'run_bash', callId: 'c1', arguments: { command: 'npm test' } }, 11_000));
-  assert.equal(deriveEntry(row(), t, { now: 30_000 }).stalled, false);
-  const quiet = deriveEntry(row(), t, { now: 11_000 + STALL_AFTER_MS + 1 });
+  const at = ms => deriveEntry(row(), t, { now: 11_000 + ms });
+  assert.equal(at(60_000).stalled, false);
+  assert.equal(at(4 * 60_000).stalled, false);
+  const quiet = at(STALL_AFTER_MS + 1);
   assert.equal(quiet.stalled, true);
   assert.ok(quiet.stalledMs >= STALL_AFTER_MS);
+  assert.equal(quiet.stallAfterMs, STALL_AFTER_MS);
   assert.equal(isStalledEntry(quiet, 11_000 + STALL_AFTER_MS + 1), true);
   assert.equal(matchesStatus(quiet, 'stalled', 11_000 + STALL_AFTER_MS + 1), true);
   assert.equal(matchesStatus(quiet, 'live', 11_000 + STALL_AFTER_MS + 1), true);
+  // the user's own window beats the default in both directions
+  const impatient = deriveEntry(row(), t, { now: 11_000 + 2 * 60_000, stallAfterMs: 60_000 });
+  assert.equal(impatient.stalled, true);
+  assert.equal(impatient.stallAfterMs, 60_000);
+  const relaxed = deriveEntry(row(), t, { now: 11_000 + 4 * 60_000, stallAfterMs: 30 * 60_000 });
+  assert.equal(relaxed.stalled, false);
+  assert.equal(deriveEntry(row(), t, { now: 11_000 + 31 * 60_000, stallAfterMs: 30 * 60_000 }).stalled, true);
+});
+
+test('the safety window clamps, and silence still reports once it runs out', () => {
+  assert.equal(STALL_AFTER_MS, 5 * 60_000);
+  assert.equal(STALL_MINUTES_DEFAULT, 5);
+  assert.equal(normalizeStallMinutes(0), 5);
+  assert.equal(normalizeStallMinutes(0.2), 1);
+  assert.equal(normalizeStallMinutes(12.5), 12.5);
+  assert.equal(normalizeStallMinutes(999), 120);
+  assert.equal(normalizeStallMs(0), 5 * 60_000);
+  assert.equal(normalizeStallMs(90_000), 90_000);
+  assert.equal(normalizeStallMs(10 * 60 * 60 * 1000), 120 * 60_000);
+  const t = createTelemetry(row());
+  reduceEvent(t, event('turn/start', 1, {}, 10_000));
+  reduceEvent(t, event('assistant/message', 2, { message: { content: [{ type: 'text', text: '想一下' }] } }, 10_500));
+  assert.equal(deriveEntry(row(), t, { now: 10_500 + 4 * 60_000 }).stalled, false);
+  const late = deriveEntry(row(), t, { now: 10_500 + 6 * 60_000 });
+  assert.equal(late.stalled, true);
+  // a derived record's own verdict wins over a fresh recomputation
+  assert.equal(isStalledEntry({ status: 'tool', stalled: false, currentTool: { startedAt: 0 } }, 10 * 60_000), false);
+  assert.equal(isStalledEntry({ status: 'tool', stalled: true }, 0), true);
+});
+
+test('the left sidebar pins running and pinned sessions above the workspace tree', () => {
+  const entries = [
+    { id: 'p1', status: 'done', pinned: true, updatedAt: 10 },
+    { id: 'r1', status: 'running', updatedAt: 20 },
+    { id: 'w1', status: 'approval', updatedAt: 30 },
+    { id: 'i1', status: 'idle', updatedAt: 40 },
+    { id: 'a1', status: 'running', updatedAt: 50, archived: true },
+  ];
+  const group = sidebarPinSessions(entries, { max: 10 });
+  assert.deepEqual(group.items.map(entry => entry.id), ['p1', 'r1', 'w1']);
+  assert.equal(group.total, 3);
+  assert.equal(group.hidden, 0);
+  assert.equal(group.pinnedCount, 1);
+  assert.equal(group.liveCount, 2);
+  assert.equal(SIDEBAR_PIN_MAX, 6);
+  const many = entries.concat(Array.from({ length: 8 }, (_, index) => ({ id: 'x' + index, status: 'running', updatedAt: 60 + index })));
+  const capped = sidebarPinSessions(many, { max: 3 });
+  assert.equal(capped.items.length, 3);
+  assert.equal(capped.hidden, capped.total - 3);
+  const kept = sidebarPinSessions(many, { max: 3, currentId: 'x0' });
+  assert.equal(kept.items.length, 3);
+  assert.ok(kept.items.some(entry => entry.id === 'x0'));
+  assert.equal(sidebarPinSessions([], {}).items.length, 0);
+  assert.deepEqual(sidebarPinSessions([null, {}, { id: '' }], {}).items, []);
+  // the session the user is reading survives even when idle and unpinned
+  const browsing = sidebarPinSessions([...entries, { id: 'idle9', status: 'idle', updatedAt: 5 }], { currentId: 'idle9' });
+  assert.deepEqual(browsing.items.map(entry => entry.id), ['p1', 'r1', 'w1', 'idle9']);
+  assert.equal(browsing.hasCurrent, true);
+  assert.equal(browsing.currentCount, 1);
+  assert.equal(browsing.pinnedCount, 1);
+  assert.equal(browsing.liveCount, 2);
+  const moved = sidebarPinSessions([...entries, { id: 'idle9', status: 'idle', updatedAt: 5 }], { currentId: 'elsewhere' });
+  assert.ok(!moved.items.some(entry => entry.id === 'idle9'));
+  assert.equal(moved.hasCurrent, false);
 });
 
 test('status filters and sort orders narrow the board', () => {

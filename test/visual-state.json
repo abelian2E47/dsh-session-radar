@@ -281,7 +281,10 @@
     }
    ],
    "toolCount": 22,
-   "deliveryState": "delivered"
+   "deliveryState": "delivered",
+   "stallAfterMs": 300000,
+   "stalled": true,
+   "stalledMs": 360000
   },
   {
    "id": "s2",
@@ -543,7 +546,8 @@
     }
    ],
    "toolCount": 6,
-   "deliveryState": "changed"
+   "deliveryState": "changed",
+   "stallAfterMs": 300000
   },
   {
    "id": "s3",
@@ -693,7 +697,8 @@
     }
    ],
    "toolCount": 5,
-   "deliveryState": "none"
+   "deliveryState": "none",
+   "stallAfterMs": 300000
   },
   {
    "id": "s4",
@@ -921,7 +926,8 @@
     }
    ],
    "toolCount": 16,
-   "deliveryState": "delivered"
+   "deliveryState": "delivered",
+   "stallAfterMs": 300000
   },
   {
    "id": "s5",
@@ -1268,7 +1274,8 @@
     }
    ],
    "toolCount": 45,
-   "deliveryState": "none"
+   "deliveryState": "none",
+   "stallAfterMs": 300000
   },
   {
    "id": "s6",
@@ -1453,7 +1460,8 @@
    ],
    "toolCount": 7,
    "deliveryState": "none",
-   "parentId": "s5"
+   "parentId": "s5",
+   "stallAfterMs": 300000
   },
   {
    "id": "s7",
@@ -1629,7 +1637,8 @@
    ],
    "toolCount": 7,
    "deliveryState": "none",
-   "parentId": "s1"
+   "parentId": "s1",
+   "stallAfterMs": 300000
   }
  ],
  "selected": {
@@ -1926,7 +1935,8 @@
   "total": 7,
   "workspaces": 2,
   "archived": 1,
-  "workspacePinned": 1
+  "workspacePinned": 1,
+  "stalled": 1
  },
  "deliverables": [
   {
@@ -2040,8 +2050,12 @@
   "activityScope": {
    "workspaces": [],
    "sessions": []
-  }
+  },
+  "stallMinutes": 5,
+  "showSidebarPins": true,
+  "sidebarPinsOpen": true
  },
+ "stallAfterMs": 300000,
  "phase": "ready",
  "streaming": "live",
  "error": null,

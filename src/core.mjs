@@ -54,8 +54,32 @@ export const STATUS_LABELS = {
   migration: '待迁移',
 };
 
-/** A running session that emits nothing for this long is worth a second look. */
-export const STALL_AFTER_MS = 90000;
+/**
+ * Safety window for a single tool call (or for a live session that stopped
+ * emitting): a working session only looks stuck once it exceeds this, so long
+ * builds and heavy edits do not raise a false alarm. Users pick their own
+ * window in the settings; five minutes is the default.
+ */
+export const STALL_AFTER_MS = 5 * 60 * 1000;
+/** Bounds for the user-chosen safety window, in minutes. */
+export const STALL_MINUTES_MIN = 1;
+export const STALL_MINUTES_MAX = 120;
+export const STALL_MINUTES_DEFAULT = STALL_AFTER_MS / 60000;
+
+/** Clamp a user-supplied safety window (milliseconds) into the supported range. */
+export function normalizeStallMs(value) {
+  const ms = Number(value);
+  const fallback = STALL_AFTER_MS;
+  if (!Number.isFinite(ms) || ms <= 0) return fallback;
+  return Math.min(STALL_MINUTES_MAX * 60000, Math.max(STALL_MINUTES_MIN * 60000, Math.round(ms)));
+}
+
+/** Clamp the settings value (minutes) into the supported range. */
+export function normalizeStallMinutes(value) {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) return STALL_MINUTES_DEFAULT;
+  return Math.min(STALL_MINUTES_MAX, Math.max(STALL_MINUTES_MIN, Math.round(minutes * 10) / 10));
+}
 
 /** Status filter vocabulary shared by the filter bar and the core predicate. */
 export const STATUS_FILTERS = [
@@ -67,19 +91,25 @@ export const STATUS_FILTERS = [
   { value: 'idle', label: '空闲' },
 ];
 
-/** True when a live session has gone quiet for longer than the stall threshold. */
-export function isStalledEntry(entry, now = Date.now()) {
+/**
+ * True when a live session has been working on one thing for longer than the
+ * safety window: the clock runs from the start of the tool call that is still
+ * running, or from the last event when nothing is executing. A derived entry
+ * already carries the verdict, so its own flag wins.
+ */
+export function isStalledEntry(entry, now = Date.now(), stallAfterMs = STALL_AFTER_MS) {
   if (!isRecord(entry)) return false;
+  const window = normalizeStallMs(stallAfterMs);
+  if (entry.stalled === true) return true;
+  if (entry.stalled === false) return false;
   const status = entry.status;
   if (status !== 'running' && status !== 'tool' && status !== 'stalled') return false;
-  if (entry.stalled === true) return true;
-  const anchor = Math.max(
-    Number(entry.lastEventAt) || 0,
-    Number(entry.currentTool && entry.currentTool.startedAt) || 0,
-    Number(entry.turnStartedAt) || 0,
-  );
+  const toolStart = Number(entry.currentTool && entry.currentTool.startedAt) || 0;
+  const anchor = toolStart > 0
+    ? toolStart
+    : Math.max(Number(entry.lastEventAt) || 0, Number(entry.turnStartedAt) || 0);
   if (anchor <= 0) return false;
-  return Math.max(0, Number(now) - anchor) >= STALL_AFTER_MS;
+  return Math.max(0, Number(now) - anchor) >= window;
 }
 
 /** One icon category per tool family. */
@@ -881,8 +911,12 @@ export function deriveEntry(row, telemetry, options = {}) {
   const lastTurn = turns.length > 0 ? turns[turns.length - 1] : null;
   const pendingSince = Number(telemetry.pendingSince) || 0;
   const waitingMs = pendingSince > 0 ? Math.max(0, now - pendingSince) : 0;
-  const activityAnchor = Math.max(Number(telemetry.lastEventAt) || 0, Number(pending?.startedAt) || 0);
+  // A running tool owns the clock: the window measures how long that one call
+  // has been going, not how recently anything else touched the session.
+  const toolAnchor = Number(pending?.startedAt) || 0;
+  const activityAnchor = toolAnchor > 0 ? toolAnchor : Math.max(0, Number(telemetry.lastEventAt) || 0);
   const stalledMs = (status === 'running' || status === 'tool') && activityAnchor > 0 ? Math.max(0, now - activityAnchor) : 0;
+  const stallAfterMs = normalizeStallMs(options.stallAfterMs);
   const tokensPerMinute = lastTurn !== null && lastTurn.durationMs > 0 && lastTurn.tokens > 0
     ? Math.round(lastTurn.tokens / (lastTurn.durationMs / 60000))
     : 0;
@@ -931,7 +965,8 @@ export function deriveEntry(row, telemetry, options = {}) {
     pendingSince,
     waitingMs,
     stalledMs,
-    stalled: stalledMs >= STALL_AFTER_MS,
+    stallAfterMs,
+    stalled: stalledMs >= stallAfterMs,
     tokensPerMinute,
     queueLength: telemetry.queueLength,
     deliverables: telemetry.deliverables.slice().sort((a, b) => b.at - a.at),
@@ -976,6 +1011,55 @@ export function sortEntries(entries, mode = 'live') {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     return b.updatedAt - a.updatedAt;
   });
+}
+
+/** How many sessions the left sidebar keeps pinned above the workspace tree. */
+export const SIDEBAR_PIN_MAX = 6;
+
+/** Statuses that count as "still working" for the sidebar pin strip. */
+const SIDEBAR_LIVE_STATUSES = new Set(['running', 'tool', 'approval', 'question']);
+
+/**
+ * The sessions the left sidebar lifts above the workspace tree: pinned
+ * sessions first (ordered like the live rail), then the ones still working,
+ * capped so the workspace list keeps most of the column. The session the user
+ * currently has open keeps its slot even when it would fall past the cap — the
+ * same courtesy the right-edge quick bar gives it.
+ */
+export function sidebarPinSessions(entries, options = {}) {
+  const list = Array.isArray(entries) ? entries : [];
+  const rawMax = Number(options.max);
+  const cap = Number.isFinite(rawMax) && rawMax > 0 ? Math.floor(rawMax) : SIDEBAR_PIN_MAX;
+  const currentId = typeof options.currentId === 'string' ? options.currentId : '';
+  const known = list.filter(entry => isRecord(entry) && typeof entry.id === 'string' && entry.id !== '');
+  const seen = new Set();
+  const ordered = [];
+  const take = entry => {
+    if (seen.has(entry.id) || entry.archived === true) return;
+    seen.add(entry.id);
+    ordered.push(entry);
+  };
+  sortEntries(known.filter(entry => entry.pinned === true), 'live').forEach(take);
+  const pinnedCount = ordered.length;
+  sortEntries(known.filter(entry => entry.pinned !== true && SIDEBAR_LIVE_STATUSES.has(entry.status)), 'live').forEach(take);
+  const liveCount = ordered.length - pinnedCount;
+  // The session the user is reading stays in the strip even when it is idle and
+  // unpinned; it drops out on its own as soon as they switch somewhere else.
+  const current = known.find(entry => entry.id === currentId) || null;
+  if (current !== null) take(current);
+  const currentCount = ordered.length - pinnedCount - liveCount;
+  let items = ordered.slice(0, cap);
+  const currentIndex = ordered.findIndex(entry => entry.id === currentId);
+  if (currentIndex >= cap) items = items.slice(0, Math.max(0, cap - 1)).concat(ordered[currentIndex]);
+  return {
+    items,
+    total: ordered.length,
+    hidden: Math.max(0, ordered.length - items.length),
+    pinnedCount,
+    liveCount,
+    currentCount,
+    hasCurrent: currentIndex >= 0,
+  };
 }
 
 /** Local YYYY-MM-DD key for a timestamp; activity rolls up by the user's calendar. */
@@ -1699,11 +1783,11 @@ export function timeFilterFloor(range, now = Date.now()) {
 }
 
 /** Does one session belong to the selected status bucket? */
-export function matchesStatus(entry, status, now = Date.now()) {
+export function matchesStatus(entry, status, now = Date.now(), stallAfterMs = STALL_AFTER_MS) {
   if (!status || status === 'all') return true;
   if (status === 'live') return entry.status === 'running' || entry.status === 'tool';
   if (status === 'waiting') return entry.status === 'approval' || entry.status === 'question';
-  if (status === 'stalled') return isStalledEntry(entry, now);
+  if (status === 'stalled') return isStalledEntry(entry, now, stallAfterMs);
   if (status === 'finished') return entry.status === 'done' || entry.status === 'migration';
   if (status === 'idle') return entry.status === 'idle';
   return true;
@@ -1717,11 +1801,12 @@ export function filterEntries(entries, query, filters) {
   const model = settings.model && settings.model !== 'all' ? settings.model : '';
   const status = typeof settings.status === 'string' ? settings.status : 'all';
   const now = Number(settings.now) || Date.now();
+  const stallAfterMs = normalizeStallMs(settings.stallAfterMs);
   const floor = timeFilterFloor(settings.range, now);
   const statusActive = status !== '' && status !== 'all';
   if (terms.length === 0 && workspace === '' && model === '' && floor === 0 && !statusActive) return entries.slice();
   return entries.filter(entry => {
-    if (!matchesStatus(entry, status, now)) return false;
+    if (!matchesStatus(entry, status, now, stallAfterMs)) return false;
     if (workspace !== '' && entry.workspace !== workspace) return false;
     if (model !== '' && entry.model !== model) return false;
     if (floor > 0 && (Number(entry.updatedAt) || 0) < floor) return false;
@@ -1741,7 +1826,8 @@ export function filterEntries(entries, query, filters) {
 }
 
 /** Distinct workspace and model values available for the filter bar, with session counts. */
-export function filterOptions(entries, now = Date.now()) {
+export function filterOptions(entries, now = Date.now(), options = {}) {
+  const stallAfterMs = normalizeStallMs(options.stallAfterMs);
   const workspaces = new Map();
   const models = new Map();
   for (const entry of entries) {
@@ -1755,7 +1841,7 @@ export function filterOptions(entries, now = Date.now()) {
     .map(option => ({
       value: option.value,
       label: option.label,
-      count: option.value === 'all' ? entries.length : entries.filter(entry => matchesStatus(entry, option.value, now)).length,
+      count: option.value === 'all' ? entries.length : entries.filter(entry => matchesStatus(entry, option.value, now, stallAfterMs)).length,
     }))
     .filter(option => option.value === 'all' || option.count > 0);
   return { workspaces: list(workspaces), models: list(models), statuses };

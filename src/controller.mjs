@@ -25,10 +25,13 @@ const DEFAULT_PREFS = {
   includeSubagents: true,
   compact: false,
   completionBadge: true,
+  stallMinutes: 5,
   defaultRange: '7d',
   cardTint: 'sand',
   cardTexture: 'paper',
   showQuickBar: true,
+  showSidebarPins: true,
+  sidebarPinsOpen: true,
   quickBarPos: null,
   railPos: null,
   activityRange: { mode: 'today', from: '', to: '', grain: 'day', timeMode: 'busy' },
@@ -101,6 +104,7 @@ function loadPrefs() {
   if (!CARD_TEXTURE_VALUES.has(prefs.cardTexture)) prefs.cardTexture = DEFAULT_PREFS.cardTexture;
   prefs.activityRange = normalizeActivityRange(prefs.activityRange);
   prefs.activityScope = normalizeActivityScope(prefs.activityScope);
+  prefs.stallMinutes = normalizeStallMinutes(prefs.stallMinutes);
   return prefs;
 }
 
@@ -1233,10 +1237,16 @@ export class RadarController {
     this.publish();
   }
 
+  /** The user-chosen safety window in milliseconds, clamped to the supported range. */
+  stallAfterMs() {
+    return normalizeStallMinutes(this.prefs.stallMinutes) * 60000;
+  }
+
   setPref(key, value) {
     if (!Object.hasOwn(DEFAULT_PREFS, key)) return;
     if (key === 'defaultRange' && !['today', '7d', '30d', 'all'].includes(String(value))) return;
     if (key === 'cardTexture' && !CARD_TEXTURE_VALUES.has(String(value))) return;
+    if (key === 'stallMinutes') value = normalizeStallMinutes(value);
     if (key === 'activityRange') value = normalizeActivityRange(value);
     if (key === 'activityScope') value = normalizeActivityScope(value);
     if (key === 'quickBarPos' || key === 'railPos') {
@@ -1384,7 +1394,7 @@ export class RadarController {
       if (row.blank === true) continue;
       const telemetry = this.telemetry.get(row.id);
       if (telemetry === undefined) continue;
-      const entry = deriveEntry(row, telemetry, { now, workspace: this.workspaceFor(row) });
+      const entry = deriveEntry(row, telemetry, { now, workspace: this.workspaceFor(row), stallAfterMs: this.stallAfterMs() });
       entry.pinned = this.pins.has(row.id);
       entry.unread = telemetry.unread === true;
       entry.archived = this.workspaceArchived.has(row.id);
@@ -1479,6 +1489,7 @@ export class RadarController {
       ui: { ...this.ui, filters: { ...this.ui.filters }, searchResults: this.ui.searchResults.slice(), bulk: { ...this.ui.bulk } },
       currentId: this.currentMainId() || null,
       prefs: { ...this.prefs },
+      stallAfterMs: this.stallAfterMs(),
       phase: this.rosterPhase,
       streaming: [...this.watches.values()].some(watch => watch.stream === 'reconnecting') ? 'reconnecting' : [...this.watches.values()].some(watch => watch.stream === 'live') ? 'live' : 'idle',
       error: this.error,

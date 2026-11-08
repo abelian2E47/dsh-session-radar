@@ -382,12 +382,30 @@ function sessionSubline(entry, now) {
   return parts;
 }
 
+/** One-line "what is it doing" label for the sidebar pin strip. */
+function sidebarPinStatus(entry) {
+  if (entry.stalled === true) return '疑似卡住 ' + formatDuration(entry.stalledMs);
+  if (entry.status === 'approval') return '等你审批' + waitingSuffix(entry);
+  if (entry.status === 'question') return '等你回答' + waitingSuffix(entry);
+  if (entry.status === 'tool') return entry.currentTool && entry.currentTool.label ? entry.currentTool.label : '调用工具';
+  if (entry.status === 'running') return entry.phase === 'thinking' ? '思考中' : '运行中';
+  return entry.statusLabel || '已固定';
+}
+
+/** The user-chosen safety window as a short label, e.g. "5 分钟". */
+function stallWindowLabel(ms) {
+  const minutes = Math.round(((Number(ms) || STALL_AFTER_MS) / 60000) * 10) / 10;
+  return (Number.isInteger(minutes) ? String(minutes) : minutes.toFixed(1)) + ' 分钟';
+}
+
 function liveLine(entry) {
   if (entry.stalled === true) {
     return {
       icon: h(Icon, { name: 'warning', size: 14 }),
       label: '疑似卡住',
-      detail: '已 ' + formatDuration(entry.stalledMs) + ' 没有新事件，可停止后重试或查看日志',
+      detail: entry.currentTool
+      ? '这次工具调用已经跑了 ' + formatDuration(entry.stalledMs) + '，超出安全区间 ' + stallWindowLabel(entry.stallAfterMs) + '，可停止后重试'
+      : '已 ' + formatDuration(entry.stalledMs) + ' 没有新事件，超出安全区间 ' + stallWindowLabel(entry.stallAfterMs) + '，可停止后重试',
       elapsed: entry.turnTimeMs > 0 ? formatDuration(entry.turnTimeMs) : '',
     };
   }
@@ -501,6 +519,15 @@ function PrefsSidebar(props) {
   const [tab, setTab] = useState('appearance');
   const prefs = props.prefs || {};
   const controller = props.controller;
+  const [stallDraft, setStallDraft] = useState(String(normalizeStallMinutes(prefs.stallMinutes)));
+  useEffect(function () {
+    setStallDraft(String(normalizeStallMinutes(prefs.stallMinutes)));
+  }, [prefs.stallMinutes]);
+  const commitStall = function (raw) {
+    const next = normalizeStallMinutes(raw);
+    setStallDraft(String(next));
+    set('stallMinutes', next);
+  };
   const set = function (key, value) {
     if (controller && typeof controller.setPref === 'function') controller.setPref(key, value);
   };
@@ -557,11 +584,41 @@ function PrefsSidebar(props) {
       h('span', { className: 'dsr-settings__section-title', key: 't' }, '显示与提醒'),
       h('span', { className: 'dsr-settings__badge', key: 'b' }, '界面'),
     ]),
-    h('p', { className: 'dsr-settings__note', key: 'note' }, '控制雷达入口、子会话与完成提醒；偏好只保存在本机。'),
+    h('p', { className: 'dsr-settings__note', key: 'note' }, '控制雷达入口、子会话、完成提醒与「疑似卡住」的安全区间；偏好只保存在本机。'),
     h('label', { className: 'dsr-toggle', key: 'rail' }, [h('span', null, '显示右侧雷达入口'), h('input', { type: 'checkbox', checked: prefs.showRail !== false, onChange: function (event) { set('showRail', event.target.checked); } })]),
     h('label', { className: 'dsr-toggle', key: 'subagents' }, [h('span', null, '显示子会话'), h('input', { type: 'checkbox', checked: prefs.includeSubagents !== false, onChange: function (event) { set('includeSubagents', event.target.checked); } })]),
     h('label', { className: 'dsr-toggle', key: 'compact' }, [h('span', null, '紧凑卡片'), h('input', { type: 'checkbox', checked: prefs.compact === true, onChange: function (event) { set('compact', event.target.checked); } })]),
     h('label', { className: 'dsr-toggle', key: 'badge' }, [h('span', null, '完成待验收提醒'), h('input', { type: 'checkbox', checked: prefs.completionBadge !== false, onChange: function (event) { set('completionBadge', event.target.checked); } })]),
+    h('div', { className: 'dsr-settings__field', key: 'stall' }, [
+      h('span', { className: 'dsr-settings__fieldlabel', key: 'label' }, '疑似卡住的安全区间'),
+      h('span', { className: 'dsr-settings__unit', key: 'unit' }, [
+        h('input', {
+          key: 'input',
+          type: 'number',
+          className: 'dsr-settings__num',
+          min: STALL_MINUTES_MIN,
+          max: STALL_MINUTES_MAX,
+          step: 1,
+          inputMode: 'numeric',
+          value: stallDraft,
+          'aria-label': '疑似卡住的安全区间（分钟）',
+          onChange: function (event) { setStallDraft(event.target.value); },
+          onBlur: function () { commitStall(stallDraft); },
+          onKeyDown: function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            commitStall(stallDraft);
+          },
+        }),
+        h('span', { className: 'dsr-settings__suffix', key: 'suffix' }, '分钟'),
+        h('button', {
+          type: 'button', key: 'reset', className: 'dsr-settings__reset',
+          title: '恢复默认 5 分钟', 'aria-label': '把安全区间恢复为默认 5 分钟',
+          onClick: function () { commitStall(STALL_MINUTES_DEFAULT); },
+        }, '默认'),
+      ]),
+    ]),
+    h('p', { className: 'dsr-settings__hint', key: 'stall-hint' }, '一次工具调用跑过这个时长（或运行中静默这么久）才标成「疑似卡住」，默认 ' + STALL_MINUTES_DEFAULT + ' 分钟，可填 ' + STALL_MINUTES_MIN + '–' + STALL_MINUTES_MAX + ' 分钟。'),
   ]);
   const quickState = props.state || {};
   const quickEntries = Array.isArray(quickState.entries) ? quickState.entries : [];
@@ -570,11 +627,13 @@ function PrefsSidebar(props) {
   const workspaceChoices = quickWorkspaces.slice(0, 8);
   const quick = h('div', { className: 'dsr-settings__section', key: 'quick' }, [
     h('div', { className: 'dsr-settings__section-head', key: 'head' }, [
-      h('span', { className: 'dsr-settings__section-title', key: 't' }, '右侧快捷栏'),
+      h('span', { className: 'dsr-settings__section-title', key: 't' }, '快捷栏与置顶'),
       h('span', { className: 'dsr-settings__badge', key: 'b' }, '导航'),
     ]),
     h('p', { className: 'dsr-settings__note', key: 'note' }, '运行中、待验收和钉住的会话，以及钉住的工作区会出现在雷达旁；最多展示 6 个会话与 3 个工作区。'),
     h('label', { className: 'dsr-toggle', key: 'show' }, [h('span', null, '显示右侧快捷栏'), h('input', { type: 'checkbox', checked: prefs.showQuickBar !== false, onChange: function (event) { set('showQuickBar', event.target.checked); } })]),
+    h('label', { className: 'dsr-toggle', key: 'sidepins' }, [h('span', null, '在工作区栏顶部置顶会话'), h('input', { type: 'checkbox', checked: prefs.showSidebarPins !== false, onChange: function (event) { set('showSidebarPins', event.target.checked); } })]),
+    h('p', { className: 'dsr-settings__hint', key: 'sidepins-hint' }, '和右侧快捷栏一样：正在运行、已固定的会话，以及你当前正在看的那个会话都会顶到左侧工作区栏最上面，最多 ' + SIDEBAR_PIN_MAX + ' 个；标题可以点开或收起，侧边栏收成图标条时自动隐藏。'),
     h('div', { className: 'dsr-settings__label', key: 'sessions-label' }, '会话'),
     sessionChoices.length === 0 ? h('p', { className: 'dsr-settings__hint', key: 'sessions-empty' }, '还没有运行中或钉住的会话。') : h('div', { className: 'dsr-quickpin-list', key: 'sessions' }, sessionChoices.map(function (entry) {
       return h('div', { className: cx('dsr-quickpin', entry.pinned && 'is-pinned'), key: 's:' + entry.id }, [
@@ -858,6 +917,8 @@ function QuickBar(props) {
     sessions.push(entry);
   };
   sortEntries(entries.filter(function (entry) { return entry.pinned === true; }), 'live').forEach(pushSession);
+  const currentEntry = entries.find(function (entry) { return entry.id === state.currentId; });
+  if (currentEntry !== undefined) pushSession(currentEntry);
   sortEntries(entries.filter(function (entry) { return entry.pinned !== true && isLiveEntry(entry); }), 'live').forEach(pushSession);
   sortEntries(entries.filter(function (entry) { return entry.pinned !== true && !isLiveEntry(entry) && entry.unread === true; }), 'recent').forEach(pushSession);
   const pinnedWorkspaces = workspaces.filter(function (workspace) { return workspace.pinned === true; });
@@ -986,6 +1047,216 @@ function QuickBar(props) {
     'aria-label': '右侧快捷栏',
   }, items);
 }
+/* --- left sidebar pins -------------------------------------------------
+ * The workspace column belongs to the host shell (its slot is single-owner),
+ * so the strip that lifts running and pinned sessions to the top of that
+ * column is portalled into the region element instead of registered as a
+ * slot entry. Everything below degrades to nothing when the host has no such
+ * region or no react-dom seed.
+ */
+
+const SIDEBAR_REGION_SELECTOR = '[class*="regionArea"]';
+const SIDEBAR_PINS_MIN_WIDTH = 150;
+
+function useSidebarRegion(enabled) {
+  const [host, setHost] = useState(null);
+  const [narrow, setNarrow] = useState(false);
+  useEffect(function () {
+    const canMount = enabled && typeof document !== 'undefined' && typeof MutationObserver === 'function';
+    if (!canMount) {
+      setHost(null);
+      setNarrow(false);
+      return undefined;
+    }
+    const node = document.createElement('div');
+    node.className = 'dsr-sidepins-host';
+    node.setAttribute('data-dsr-sidepins-host', '');
+    let frame = 0;
+    let resize = null;
+    let observed = null;
+    const attach = function () {
+      const region = document.querySelector(SIDEBAR_REGION_SELECTOR);
+      if (region === null) {
+        setHost(null);
+        setNarrow(false);
+        return;
+      }
+      if (node.parentNode !== region) region.insertBefore(node, region.firstChild);
+      const width = region.getBoundingClientRect().width;
+      setNarrow(width > 0 && width < SIDEBAR_PINS_MIN_WIDTH);
+      setHost(node.parentNode === region ? node : null);
+      if (typeof ResizeObserver === 'function' && observed !== region) {
+        if (resize !== null) resize.disconnect();
+        resize = new ResizeObserver(schedule);
+        resize.observe(region);
+        observed = region;
+      }
+    };
+    const schedule = function () {
+      if (frame !== 0) return;
+      frame = requestAnimationFrame(function () {
+        frame = 0;
+        attach();
+      });
+    };
+    attach();
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', schedule);
+    return function () {
+      observer.disconnect();
+      if (resize !== null) resize.disconnect();
+      window.removeEventListener('resize', schedule);
+      if (frame !== 0) cancelAnimationFrame(frame);
+      if (node.parentNode !== null) node.parentNode.removeChild(node);
+      setHost(null);
+      setNarrow(false);
+    };
+  }, [enabled]);
+  return { host, narrow };
+}
+
+/** One strip row: status dot, title, then workspace and what it is doing now. */
+function SidebarPinRow(props) {
+  const entry = props.entry;
+  const current = props.current === true;
+  const title = entry.title || '未命名会话';
+  const status = sidebarPinStatus(entry);
+  const meta = [entry.workspace, status].filter(Boolean).join(' · ');
+  const flags = [];
+  if (current) flags.push({ key: 'current', className: 'dsr-sidepins__flag', label: '当前' });
+  else if (entry.pinned === true) flags.push({ key: 'pinned', className: 'dsr-sidepins__flag is-pin', label: '已固定' });
+  else if (entry.unread === true) flags.push({ key: 'review', className: 'dsr-sidepins__flag is-review', label: '待验收' });
+  return h('div', {
+    className: cx('dsr-sidepins__row', entry.pinned === true && 'is-pinned', current && 'is-current', entry.stalled === true && 'is-stalled'),
+    key: 'pin:' + entry.id,
+    role: 'listitem',
+    'data-dsr-sidepins-row': entry.id,
+    'data-status': entry.status,
+  }, [
+    h('button', {
+      type: 'button',
+      key: 'main',
+      className: 'dsr-sidepins__main',
+      title: title + ' · ' + meta,
+      'aria-current': current ? 'true' : undefined,
+      'aria-label': '打开会话：' + title + '（' + status + '）',
+      onClick: function () { props.onOpen(entry.id); },
+    }, [
+      h('span', {
+        className: cx('dsr-sidepins__dot', entry.stalled === true ? 'is-stalled' : 'is-' + entry.status),
+        key: 'dot',
+        'aria-hidden': 'true',
+      }),
+      h('span', { className: 'dsr-sidepins__copy', key: 'copy' }, [
+        h('span', { className: 'dsr-sidepins__line', key: 'line' }, [
+          h('span', { className: 'dsr-sidepins__name', key: 'name' }, title),
+          flags.length > 0 ? h('span', { className: flags[0].className, key: flags[0].key }, flags[0].label) : null,
+        ]),
+        h('span', { className: 'dsr-sidepins__meta', key: 'meta' }, meta),
+      ]),
+    ]),
+    h('button', {
+      type: 'button',
+      key: 'pin',
+      className: cx('dsr-sidepins__pin', entry.pinned === true && 'is-active'),
+      title: entry.pinned === true ? '取消固定' : '固定到顶部',
+      'aria-label': (entry.pinned === true ? '取消固定会话：' : '固定会话到顶部：') + title,
+      'aria-pressed': entry.pinned === true ? 'true' : 'false',
+      onClick: function (event) {
+        event.stopPropagation();
+        props.onPin(entry.id);
+      },
+    }, h(Icon, { name: entry.pinned === true ? 'pin-filled' : 'pin', size: 12 })),
+  ]);
+}
+
+/** The strip itself, rendered inside the host sidebar column. */
+function SidebarPins(props) {
+  const state = props.state;
+  const controller = props.controller;
+  const group = sidebarPinSessions(state.entries, { max: SIDEBAR_PIN_MAX, currentId: state.currentId });
+  if (group.items.length === 0) return null;
+  const open = (state.prefs || {}).sidebarPinsOpen !== false;
+  const toggle = function () {
+    if (controller && typeof controller.setPref === 'function') controller.setPref('sidebarPinsOpen', !open);
+  };
+  const summary = [];
+  if (group.pinnedCount > 0) summary.push(group.pinnedCount + ' 已固定');
+  if (group.liveCount > 0) summary.push(group.liveCount + ' 运行中');
+  if (group.currentCount > 0) summary.push('当前会话');
+  const head = h('div', { className: 'dsr-sidepins__head', key: 'head' }, [
+    h('button', {
+      type: 'button',
+      key: 'toggle',
+      className: cx('dsr-sidepins__toggle', open && 'is-open'),
+      'aria-expanded': open ? 'true' : 'false',
+      'aria-controls': 'dsr-sidepins-list',
+      title: open ? '收起置顶会话' : '展开置顶会话',
+      onClick: toggle,
+    }, [
+      h(Icon, { name: open ? 'chevron-down' : 'chevron-right', size: 11, key: 'chevron' }),
+      h('span', { className: 'dsr-sidepins__title', key: 'title' }, '置顶会话'),
+      h('span', { className: 'dsr-sidepins__count', key: 'count', title: summary.join(' · ') }, String(group.total)),
+    ]),
+    h('button', {
+      type: 'button',
+      key: 'all',
+      className: 'dsr-sidepins__all',
+      title: '在会话雷达里查看全部会话',
+      'aria-label': '打开会话雷达查看全部会话',
+      onClick: function () { controller.open(); },
+    }, '全部'),
+  ]);
+  if (!open) {
+    const collapsedHint = summary.length > 0 ? summary.join(' · ') : '';
+    return h('section', { className: 'dsr-sidepins is-collapsed', 'data-dsr-sidepins': '', 'aria-label': '置顶会话：运行中与已固定' }, [
+      head,
+      collapsedHint === '' ? null : h('button', {
+        type: 'button',
+        key: 'hint',
+        className: 'dsr-sidepins__hint',
+        title: '展开置顶会话',
+        onClick: toggle,
+      }, collapsedHint),
+    ]);
+  }
+  const rows = group.items.map(function (entry) {
+    return h(SidebarPinRow, {
+      key: 'row:' + entry.id,
+      entry: entry,
+      current: entry.id === state.currentId,
+      onOpen: function (id) { controller.openSession(id); },
+      onPin: function (id) { controller.togglePin(id); },
+    });
+  });
+  const more = group.hidden > 0 ? h('button', {
+    type: 'button',
+    key: 'more',
+    className: 'dsr-sidepins__more',
+    title: '还有 ' + group.hidden + ' 个运行中或已固定的会话',
+    onClick: function () { controller.open(); },
+  }, '还有 ' + group.hidden + ' 个') : null;
+  const list = h('div', {
+    className: 'dsr-sidepins__list',
+    key: 'list',
+    id: 'dsr-sidepins-list',
+    role: 'list',
+    'aria-label': '运行中与已固定的会话',
+  }, more === null ? rows : rows.concat([more]));
+  return h('section', { className: 'dsr-sidepins', 'data-dsr-sidepins': '', 'aria-label': '置顶会话：运行中与已固定' }, [head, list]);
+}
+
+/** Mounts the strip into the sidebar region, or renders nothing at all. */
+function SidebarPinsPortal(props) {
+  const state = props.state;
+  const enabled = state !== null && state !== undefined && (state.prefs || {}).showSidebarPins !== false;
+  const region = useSidebarRegion(enabled);
+  if (!enabled || createPortal === null) return null;
+  if (region.host === null || region.narrow) return null;
+  return createPortal(h(SidebarPins, { state: state, controller: props.controller }), region.host);
+}
+
 function DockFooter(props) {
   const state = props.state;
   return h('div', { className: 'dsr-dock__foot' }, [
@@ -1054,6 +1325,7 @@ function Dock(props) {
     const working = state.counts.active + state.counts.waiting;
     const railVisible = state.prefs.showRail !== false;
     return h(Fragment, null, [
+      h(SidebarPinsPortal, { key: 'sidepins', controller: controller, state: state }),
       h(QuickBar, {
         key: 'quickbar', state: state, railVisible: railVisible, controller: controller,
         onTogglePin: function (id) { controller.togglePin(id); },
@@ -1138,6 +1410,7 @@ function Dock(props) {
     body = h('div', { className: 'dsr-scroll' }, items);
   }
   return h(Fragment, null, [
+    h(SidebarPinsPortal, { key: 'sidepins', controller: controller, state: state }),
     h('div', { className: 'dsr-scrim', key: 'scrim', onClick: function () { controller.close(); } }),
     h('aside', { className: 'dsr-dock', key: 'dock', id: 'dsr-dock', 'data-glyph-external': '' }, [
       h('header', { className: 'dsr-dock__head', key: 'head' }, [
@@ -1156,7 +1429,7 @@ function Dock(props) {
       h('div', { className: 'dsr-stats', key: 'stats' }, [
         h(Stat, { key: 'active', icon: 'pulse', iconSize: 13, tone: 'green', label: '运行中', value: String(state.counts.active), title: '正在执行或调用工具' }),
         h(Stat, { key: 'waiting', icon: 'warning', iconSize: 13, tone: 'amber', label: '等待你', value: String(state.counts.waiting), title: '审批或回答后继续' }),
-        state.counts.stalled > 0 ? h(Stat, { key: 'stalled', icon: 'warning', iconSize: 13, tone: 'red', label: '卡住', value: String(state.counts.stalled), title: '运行中但超过 90 秒没有新事件，可以停止后重试' }) : null,
+        state.counts.stalled > 0 ? h(Stat, { key: 'stalled', icon: 'warning', iconSize: 13, tone: 'red', label: '卡住', value: String(state.counts.stalled), title: '工具调用或运行中的静默超过安全区间（' + stallWindowLabel(state.stallAfterMs) + '）才提醒，可以停止后重试' }) : null,
         h(Stat, { key: 'unread', icon: 'check', iconSize: 13, tone: 'green', label: '待验收', value: String(state.counts.unread), onClick: state.counts.unread > 0 ? function () { controller.clearUnread(); } : undefined, title: '最近完成且尚未点开验收的会话；点击清除提醒' }),
       ]),
       h('div', { className: 'dsr-tabs', key: 'tabs' }, [
@@ -1199,7 +1472,7 @@ function DetailStats(props) {
   const healthIcon = entry.stalled === true ? 'warning' : waiting ? 'approval' : live ? 'running' : 'check';
   const healthValue = entry.stalled === true ? '疑似卡住' : waiting ? '等你处理' : live ? '正常' : entry.statusLabel;
   const healthNote = entry.stalled === true
-    ? formatDuration(entry.stalledMs) + ' 没有新事件'
+    ? (entry.currentTool ? '工具调用 ' + formatDuration(entry.stalledMs) : formatDuration(entry.stalledMs) + ' 无事件') + ' / 区间 ' + stallWindowLabel(entry.stallAfterMs)
     : waiting
       ? '已等待 ' + formatDuration(entry.waitingMs)
       : entry.lastEventAt > 0 ? '最近事件 ' + formatRelative(entry.lastEventAt, Date.now()) : '还没有事件';
@@ -2927,7 +3200,7 @@ function RadarPage(props) {
     h('div', { className: 'dsr-page__stats', key: 'stats' }, [
       h(Stat, { key: 'active', icon: 'pulse', tone: 'green', label: '运行中', value: String(state.counts.active), title: '正在执行或调用工具的会话' }),
       h(Stat, { key: 'waiting', icon: 'warning', tone: 'amber', label: '等待你', value: String(state.counts.waiting), title: '等待审批或回答' }),
-      state.counts.stalled > 0 ? h(Stat, { key: 'stalled', icon: 'warning', tone: 'red', label: '卡住', value: String(state.counts.stalled), title: '运行中但超过 90 秒没有新事件' }) : null,
+      state.counts.stalled > 0 ? h(Stat, { key: 'stalled', icon: 'warning', tone: 'red', label: '卡住', value: String(state.counts.stalled), title: '工具调用或运行中的静默超过安全区间（' + stallWindowLabel(state.stallAfterMs) + '）才提醒' }) : null,
       h(Stat, { key: 'workspaces', icon: 'folder', label: '工作区', value: String(workspaceCount), title: '已加载的工作区' }),
       h(Stat, { key: 'tokens', icon: 'token', label: '累计 tokens', value: formatTokens(state.counts.tokenSum), title: '已同步会话的 token 总和' }),
       h(Stat, { key: 'sessions', icon: 'session', tone: 'accent', label: '会话总数', value: String(state.counts.total || 0), title: '目录中已同步的会话总数' }),
