@@ -1,0 +1,4765 @@
+{
+  "entries": [
+    {
+      "id": "s1",
+      "title": "会话雷达插件开发",
+      "cwd": "E:\\dsh-dev",
+      "workspace": "dsh-dev",
+      "blank": false,
+      "running": true,
+      "status": "tool",
+      "statusLabel": "调用工具",
+      "phase": "tool",
+      "phaseLabel": "正在调用工具",
+      "model": "deepseek-v4.1-flash",
+      "provider": "",
+      "preset": "",
+      "turn": 3,
+      "step": 9,
+      "currentTool": {
+        "name": "run_code",
+        "label": "执行代码",
+        "detail": "校验侧边栏在窄屏下的折叠行为",
+        "startedAt": 1794042193171,
+        "elapsedMs": 8401,
+        "category": "code"
+      },
+      "lastAction": {
+        "id": "call-s1",
+        "name": "run_code",
+        "label": "执行代码",
+        "detail": "校验侧边栏在窄屏下的折叠行为",
+        "path": "",
+        "status": "running",
+        "startedAt": 1794042193171,
+        "endedAt": 0,
+        "durationMs": 0,
+        "argsText": "",
+        "result": "",
+        "isError": false
+      },
+      "actions": [
+        {
+          "id": "call-s1",
+          "name": "run_code",
+          "label": "执行代码",
+          "detail": "校验侧边栏在窄屏下的折叠行为",
+          "path": "",
+          "status": "running",
+          "startedAt": 1794042193171,
+          "endedAt": 0,
+          "durationMs": 0,
+          "argsText": "",
+          "result": "",
+          "isError": false
+        }
+      ],
+      "todos": [
+        {
+          "content": "盘点 DSH 插件槽位与 Session API",
+          "status": "completed"
+        },
+        {
+          "content": "实现侧边栏实时雷达",
+          "status": "in_progress"
+        },
+        {
+          "content": "验证交付物与用量视图",
+          "status": "pending"
+        }
+      ],
+      "currentTodo": {
+        "content": "实现侧边栏实时雷达",
+        "status": "in_progress"
+      },
+      "progress": {
+        "done": 1,
+        "total": 3,
+        "percent": 33
+      },
+      "tokens": {
+        "uncachedInputTokens": 120000,
+        "outputTokens": 9000,
+        "cacheReadTokens": 780000,
+        "cacheWriteTokens": 2000
+      },
+      "tokenTotal": 911000,
+      "usagePromptTokens": 460000,
+      "contextWindow": 1000000,
+      "contextRatio": 0.46,
+      "contextPercent": 46,
+      "stats": {
+        "turns": 3,
+        "steps": 24,
+        "llmMs": 154000,
+        "toolMs": 72000
+      },
+      "pendingInput": [],
+      "queueLength": 0,
+      "deliverables": [
+        {
+          "path": "E:\\dsh-dev\\README.md",
+          "name": "README.md",
+          "extension": "md",
+          "description": "安装与使用说明",
+          "kind": "presented",
+          "tool": "present",
+          "at": 1794042171571,
+          "turn": 3
+        },
+        {
+          "path": "E:\\dsh-dev\\lib\\client.js",
+          "name": "client.js",
+          "extension": "js",
+          "description": "插件浏览器入口",
+          "kind": "changed",
+          "tool": "write",
+          "at": 1794042101571,
+          "turn": 3
+        }
+      ],
+      "deliverableCount": 2,
+      "lastText": "已接入 Session Controller：活跃会话、事件流和投影都在一个 store 中汇合。",
+      "lastPrompt": "",
+      "reasoning": "",
+      "elapsedMs": 15001,
+      "lastEventAt": 0,
+      "lastEventAgo": null,
+      "updatedAt": 1794042171572,
+      "unread": false,
+      "stream": "idle",
+      "error": null,
+      "presetLabel": "默认预设",
+      "pinned": true,
+      "turnTimeMs": 45000,
+      "totalTimeMs": 120000,
+      "archived": false,
+      "turns": [
+        {
+          "index": 1,
+          "startedAt": 1794021291572,
+          "endedAt": 1794021352572,
+          "durationMs": 61000,
+          "state": "done",
+          "prompt": "盘点 DSH 的插件槽位和会话 API，先给出接入方案。",
+          "text": "",
+          "steps": 8,
+          "tools": 7,
+          "errors": 0,
+          "tokens": 15400,
+          "chain": [
+            {
+              "id": "s1-t1-c0",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s1-t1-c1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "盘点 Slot 与 Session API 能力",
+              "category": "code",
+              "status": "done",
+              "durationMs": 2100
+            },
+            {
+              "id": "s1-t1-c2",
+              "name": "todo_write",
+              "label": "更新计划",
+              "detail": "3 项计划",
+              "category": "plan",
+              "status": "done",
+              "durationMs": 3000
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 2,
+          "startedAt": 1794022011572,
+          "endedAt": 1794022093572,
+          "durationMs": 82000,
+          "state": "done",
+          "prompt": "把右侧雷达做成常驻入口，带上实时状态和等待提醒。",
+          "text": "",
+          "steps": 7,
+          "tools": 8,
+          "errors": 0,
+          "tokens": 18800,
+          "chain": [
+            {
+              "id": "s1-t2-c0",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "校验侧边栏在窄屏下的折叠行为",
+              "category": "code",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s1-t2-c1",
+              "name": "edit",
+              "label": "编辑文件",
+              "detail": "src/styles.mjs",
+              "category": "file",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 3,
+          "startedAt": 1794042156572,
+          "endedAt": 0,
+          "durationMs": 45000,
+          "state": "running",
+          "prompt": "给总览页加上卡片矩阵：进行中、最近会话、交付物、用量。",
+          "text": "",
+          "steps": 9,
+          "tools": 7,
+          "errors": 0,
+          "tokens": 22200,
+          "chain": [
+            {
+              "id": "s1-t3-c0",
+              "name": "write",
+              "label": "写入文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s1-t3-c1",
+              "name": "present",
+              "label": "交付文件",
+              "detail": "README.md、client.js",
+              "category": "deliver",
+              "status": "running",
+              "durationMs": 0
+            }
+          ],
+          "deliverables": [
+            {
+              "path": "E:\\dsh-dev\\README.md",
+              "name": "README.md",
+              "extension": "md",
+              "description": "安装与使用说明",
+              "kind": "presented",
+              "tool": "present",
+              "at": 1794042171571,
+              "turn": 3
+            },
+            {
+              "path": "E:\\dsh-dev\\lib\\client.js",
+              "name": "client.js",
+              "extension": "js",
+              "description": "插件浏览器入口",
+              "kind": "changed",
+              "tool": "write",
+              "at": 1794042101571,
+              "turn": 3
+            }
+          ],
+          "calls": 3,
+          "models": {
+            "deepseek-v4.1-flash": 3
+          }
+        }
+      ],
+      "toolCount": 22,
+      "deliveryState": "delivered"
+    },
+    {
+      "id": "s2",
+      "title": "登录页视觉回归",
+      "cwd": "E:\\web-shell",
+      "workspace": "web-shell",
+      "blank": false,
+      "running": true,
+      "status": "running",
+      "statusLabel": "运行中",
+      "phase": "idle",
+      "phaseLabel": "等待新指令",
+      "model": "deepseek-v4.1-flash",
+      "provider": "",
+      "preset": "",
+      "turn": 4,
+      "step": 3,
+      "currentTool": null,
+      "lastAction": null,
+      "actions": [],
+      "todos": [
+        {
+          "content": "采集基线截图",
+          "status": "completed"
+        },
+        {
+          "content": "修复对比度问题",
+          "status": "in_progress"
+        }
+      ],
+      "currentTodo": {
+        "content": "修复对比度问题",
+        "status": "in_progress"
+      },
+      "progress": {
+        "done": 1,
+        "total": 2,
+        "percent": 50
+      },
+      "tokens": {
+        "uncachedInputTokens": 120000,
+        "outputTokens": 9000,
+        "cacheReadTokens": 780000,
+        "cacheWriteTokens": 2000
+      },
+      "tokenTotal": 911000,
+      "usagePromptTokens": 710000,
+      "contextWindow": 1000000,
+      "contextRatio": 0.71,
+      "contextPercent": 71,
+      "stats": {
+        "turns": 4,
+        "steps": 12,
+        "llmMs": 154000,
+        "toolMs": 72000
+      },
+      "pendingInput": [],
+      "queueLength": 0,
+      "deliverables": [
+        {
+          "path": "E:\\dsh-dev\\src\\styles.mjs",
+          "name": "styles.mjs",
+          "extension": "mjs",
+          "description": "深色主题对比度修正",
+          "kind": "changed",
+          "tool": "edit",
+          "at": 1794042111572,
+          "turn": 4
+        }
+      ],
+      "deliverableCount": 1,
+      "lastText": "正在核对深色主题下的焦点环和禁用态。",
+      "lastPrompt": "",
+      "reasoning": "",
+      "elapsedMs": 15000,
+      "lastEventAt": 0,
+      "lastEventAgo": null,
+      "updatedAt": 1794042106572,
+      "unread": false,
+      "stream": "idle",
+      "error": null,
+      "presetLabel": "默认预设",
+      "pinned": false,
+      "turnTimeMs": 45000,
+      "totalTimeMs": 180000,
+      "archived": false,
+      "turns": [
+        {
+          "index": 1,
+          "startedAt": 1794021226572,
+          "endedAt": 1794021287572,
+          "durationMs": 61000,
+          "state": "done",
+          "prompt": "登录页的对比度不达标，先量一下当前色阶。",
+          "text": "",
+          "steps": 3,
+          "tools": 1,
+          "errors": 0,
+          "tokens": 15400,
+          "chain": [
+            {
+              "id": "s2-t1-c0",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s2-t1-c1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "盘点 Slot 与 Session API 能力",
+              "category": "code",
+              "status": "done",
+              "durationMs": 2100
+            },
+            {
+              "id": "s2-t1-c2",
+              "name": "todo_write",
+              "label": "更新计划",
+              "detail": "3 项计划",
+              "category": "plan",
+              "status": "done",
+              "durationMs": 3000
+            }
+          ],
+          "deliverables": [],
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          }
+        },
+        {
+          "index": 2,
+          "startedAt": 1794021946572,
+          "endedAt": 1794022028572,
+          "durationMs": 82000,
+          "state": "done",
+          "prompt": "把次级文字和按钮边框调到 AA 以上。",
+          "text": "",
+          "steps": 2,
+          "tools": 2,
+          "errors": 0,
+          "tokens": 18800,
+          "chain": [
+            {
+              "id": "s2-t2-c0",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "校验侧边栏在窄屏下的折叠行为",
+              "category": "code",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s2-t2-c1",
+              "name": "edit",
+              "label": "编辑文件",
+              "detail": "src/styles.mjs",
+              "category": "file",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          }
+        },
+        {
+          "index": 3,
+          "startedAt": 1794022666572,
+          "endedAt": 1794022769572,
+          "durationMs": 103000,
+          "state": "done",
+          "prompt": "回归一遍深色主题，确认没有新的低对比区域。",
+          "text": "",
+          "steps": 4,
+          "tools": 1,
+          "errors": 0,
+          "tokens": 22200,
+          "chain": [
+            {
+              "id": "s2-t3-c0",
+              "name": "write",
+              "label": "写入文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s2-t3-c1",
+              "name": "present",
+              "label": "交付文件",
+              "detail": "README.md、client.js",
+              "category": "deliver",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          }
+        },
+        {
+          "index": 4,
+          "startedAt": 1794042156572,
+          "endedAt": 0,
+          "durationMs": 45000,
+          "state": "running",
+          "prompt": "补一张窄屏截图做回归基线。",
+          "text": "",
+          "steps": 3,
+          "tools": 2,
+          "errors": 0,
+          "tokens": 25600,
+          "chain": [
+            {
+              "id": "s2-t4-c0",
+              "name": "web_search",
+              "label": "搜索网页",
+              "detail": "对比度与色阶规范",
+              "category": "search",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s2-t4-c1",
+              "name": "computer_use",
+              "label": "操作电脑",
+              "detail": "截取登录页对比",
+              "category": "computer",
+              "status": "running",
+              "durationMs": 0
+            }
+          ],
+          "deliverables": [
+            {
+              "path": "E:\\dsh-dev\\src\\styles.mjs",
+              "name": "styles.mjs",
+              "extension": "mjs",
+              "description": "深色主题对比度修正",
+              "kind": "changed",
+              "tool": "edit",
+              "at": 1794042111572,
+              "turn": 4
+            }
+          ],
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          }
+        }
+      ],
+      "toolCount": 6,
+      "deliveryState": "changed"
+    },
+    {
+      "id": "s3",
+      "title": "修复导出超时",
+      "cwd": "E:\\api-server",
+      "workspace": "api-server",
+      "blank": false,
+      "running": true,
+      "status": "approval",
+      "statusLabel": "等待审批",
+      "phase": "thinking",
+      "phaseLabel": "正在思考",
+      "model": "deepseek-v4.1-flash",
+      "provider": "",
+      "preset": "",
+      "turn": 2,
+      "step": 2,
+      "currentTool": null,
+      "lastAction": null,
+      "actions": [],
+      "todos": null,
+      "currentTodo": null,
+      "progress": null,
+      "tokens": {
+        "uncachedInputTokens": 120000,
+        "outputTokens": 9000,
+        "cacheReadTokens": 780000,
+        "cacheWriteTokens": 2000
+      },
+      "tokenTotal": 911000,
+      "usagePromptTokens": 880000,
+      "contextWindow": 1000000,
+      "contextRatio": 0.88,
+      "contextPercent": 88,
+      "stats": {
+        "turns": 2,
+        "steps": 5,
+        "llmMs": 154000,
+        "toolMs": 72000
+      },
+      "pendingInput": [
+        "approval"
+      ],
+      "queueLength": 0,
+      "deliverables": [],
+      "deliverableCount": 0,
+      "lastText": "需要你确认是否允许执行 pwsh 命令重启本地服务。",
+      "lastPrompt": "",
+      "reasoning": "",
+      "elapsedMs": 15000,
+      "lastEventAt": 0,
+      "lastEventAgo": null,
+      "updatedAt": 1794041961572,
+      "unread": false,
+      "stream": "idle",
+      "error": null,
+      "presetLabel": "默认预设",
+      "pinned": false,
+      "turnTimeMs": 45000,
+      "totalTimeMs": 240000,
+      "archived": false,
+      "turns": [
+        {
+          "index": 1,
+          "startedAt": 1794021081572,
+          "endedAt": 1794021142572,
+          "durationMs": 61000,
+          "state": "done",
+          "prompt": "导出 PDF 超时了，先定位是哪一步卡住。",
+          "text": "",
+          "steps": 3,
+          "tools": 2,
+          "errors": 0,
+          "tokens": 15400,
+          "chain": [
+            {
+              "id": "s3-t1-c0",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s3-t1-c1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "盘点 Slot 与 Session API 能力",
+              "category": "code",
+              "status": "done",
+              "durationMs": 2100
+            },
+            {
+              "id": "s3-t1-c2",
+              "name": "todo_write",
+              "label": "更新计划",
+              "detail": "3 项计划",
+              "category": "plan",
+              "status": "done",
+              "durationMs": 3000
+            }
+          ],
+          "deliverables": [],
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          }
+        },
+        {
+          "index": 2,
+          "startedAt": 1794021801572,
+          "endedAt": 1794021883572,
+          "durationMs": 82000,
+          "state": "error",
+          "prompt": "把超时时间从 30s 调到 120s，并加上分片重试。",
+          "text": "",
+          "steps": 2,
+          "tools": 3,
+          "errors": 1,
+          "tokens": 18800,
+          "chain": [
+            {
+              "id": "s3-t2-c0",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "校验侧边栏在窄屏下的折叠行为",
+              "category": "code",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s3-t2-c1",
+              "name": "edit",
+              "label": "编辑文件",
+              "detail": "src/styles.mjs",
+              "category": "file",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          }
+        }
+      ],
+      "toolCount": 5,
+      "deliveryState": "none"
+    },
+    {
+      "id": "s4",
+      "title": "周报自动汇总",
+      "cwd": "E:\\ops",
+      "workspace": "ops",
+      "blank": false,
+      "running": false,
+      "status": "done",
+      "statusLabel": "刚完成",
+      "phase": "done",
+      "phaseLabel": "本轮已完成",
+      "model": "deepseek-v4.1-flash",
+      "provider": "",
+      "preset": "",
+      "turn": 3,
+      "step": 8,
+      "currentTool": null,
+      "lastAction": null,
+      "actions": [],
+      "todos": null,
+      "currentTodo": null,
+      "progress": null,
+      "tokens": {
+        "uncachedInputTokens": 120000,
+        "outputTokens": 9000,
+        "cacheReadTokens": 780000,
+        "cacheWriteTokens": 2000
+      },
+      "tokenTotal": 911000,
+      "usagePromptTokens": 630000,
+      "contextWindow": 1000000,
+      "contextRatio": 0.63,
+      "contextPercent": 63,
+      "stats": {
+        "turns": 3,
+        "steps": 21,
+        "llmMs": 154000,
+        "toolMs": 72000
+      },
+      "pendingInput": [],
+      "queueLength": 0,
+      "deliverables": [
+        {
+          "path": "E:\\ops\\metrics.xlsx",
+          "name": "metrics.xlsx",
+          "extension": "xlsx",
+          "description": "指标明细",
+          "kind": "presented",
+          "tool": "present",
+          "at": 1794041501572,
+          "turn": 3
+        },
+        {
+          "path": "E:\\ops\\weekly-2026-11-07.docx",
+          "name": "weekly-2026-11-07.docx",
+          "extension": "docx",
+          "description": "本周运营周报",
+          "kind": "presented",
+          "tool": "present",
+          "at": 1794041481572,
+          "turn": 3
+        }
+      ],
+      "deliverableCount": 2,
+      "lastText": "周报与指标明细已经生成，关键结论已放在首页摘要。",
+      "lastPrompt": "",
+      "reasoning": "",
+      "elapsedMs": 60000,
+      "lastEventAt": 0,
+      "lastEventAgo": null,
+      "updatedAt": 1794041421572,
+      "unread": true,
+      "stream": "idle",
+      "error": null,
+      "presetLabel": "默认预设",
+      "pinned": false,
+      "turnTimeMs": 0,
+      "totalTimeMs": 300000,
+      "archived": false,
+      "turns": [
+        {
+          "index": 1,
+          "startedAt": 1794020541572,
+          "endedAt": 1794020602572,
+          "durationMs": 61000,
+          "state": "done",
+          "prompt": "汇总本周的指标周报，按团队拆分。",
+          "text": "",
+          "steps": 7,
+          "tools": 5,
+          "errors": 0,
+          "tokens": 15400,
+          "chain": [
+            {
+              "id": "s4-t1-c0",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s4-t1-c1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "盘点 Slot 与 Session API 能力",
+              "category": "code",
+              "status": "done",
+              "durationMs": 2100
+            },
+            {
+              "id": "s4-t1-c2",
+              "name": "todo_write",
+              "label": "更新计划",
+              "detail": "3 项计划",
+              "category": "plan",
+              "status": "done",
+              "durationMs": 3000
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 2,
+          "startedAt": 1794021261572,
+          "endedAt": 1794021343572,
+          "durationMs": 82000,
+          "state": "done",
+          "prompt": "补一张关键结论的摘要卡，放在首页。",
+          "text": "",
+          "steps": 6,
+          "tools": 6,
+          "errors": 0,
+          "tokens": 18800,
+          "chain": [
+            {
+              "id": "s4-t2-c0",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "校验侧边栏在窄屏下的折叠行为",
+              "category": "code",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s4-t2-c1",
+              "name": "edit",
+              "label": "编辑文件",
+              "detail": "src/styles.mjs",
+              "category": "file",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 3,
+          "startedAt": 1794021981572,
+          "endedAt": 1794022084572,
+          "durationMs": 103000,
+          "state": "done",
+          "prompt": "把明细表导出成 xlsx，附在周报里。",
+          "text": "",
+          "steps": 8,
+          "tools": 5,
+          "errors": 0,
+          "tokens": 22200,
+          "chain": [
+            {
+              "id": "s4-t3-c0",
+              "name": "write",
+              "label": "写入文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s4-t3-c1",
+              "name": "present",
+              "label": "交付文件",
+              "detail": "README.md、client.js",
+              "category": "deliver",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [
+            {
+              "path": "E:\\ops\\metrics.xlsx",
+              "name": "metrics.xlsx",
+              "extension": "xlsx",
+              "description": "指标明细",
+              "kind": "presented",
+              "tool": "present",
+              "at": 1794041501572,
+              "turn": 3
+            },
+            {
+              "path": "E:\\ops\\weekly-2026-11-07.docx",
+              "name": "weekly-2026-11-07.docx",
+              "extension": "docx",
+              "description": "本周运营周报",
+              "kind": "presented",
+              "tool": "present",
+              "at": 1794041481572,
+              "turn": 3
+            }
+          ],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        }
+      ],
+      "toolCount": 16,
+      "deliveryState": "delivered"
+    },
+    {
+      "id": "s5",
+      "title": "API 兼容性核查",
+      "cwd": "E:\\dsh-sdk",
+      "workspace": "dsh-sdk",
+      "blank": false,
+      "running": false,
+      "status": "done",
+      "statusLabel": "刚完成",
+      "phase": "done",
+      "phaseLabel": "本轮已完成",
+      "model": "deepseek-v4.1-flash",
+      "provider": "",
+      "preset": "",
+      "turn": 7,
+      "step": 8,
+      "currentTool": null,
+      "lastAction": null,
+      "actions": [],
+      "todos": null,
+      "currentTodo": null,
+      "progress": null,
+      "tokens": {
+        "uncachedInputTokens": 42000,
+        "outputTokens": 6000,
+        "cacheReadTokens": 180000,
+        "cacheWriteTokens": 0
+      },
+      "tokenTotal": 228000,
+      "usagePromptTokens": 240000,
+      "contextWindow": 1000000,
+      "contextRatio": 0.24,
+      "contextPercent": 24,
+      "stats": {
+        "turns": 7,
+        "steps": 56,
+        "llmMs": 154000,
+        "toolMs": 72000
+      },
+      "pendingInput": [],
+      "queueLength": 0,
+      "deliverables": [],
+      "deliverableCount": 0,
+      "lastText": "兼容性矩阵已核对完毕，没有发现破坏性变更。",
+      "lastPrompt": "",
+      "reasoning": "",
+      "elapsedMs": 60000,
+      "lastEventAt": 0,
+      "lastEventAgo": null,
+      "updatedAt": 1793955801572,
+      "unread": false,
+      "stream": "idle",
+      "error": null,
+      "presetLabel": "默认预设",
+      "pinned": false,
+      "turnTimeMs": 0,
+      "totalTimeMs": 360000,
+      "archived": false,
+      "turns": [
+        {
+          "index": 1,
+          "startedAt": 1793934921572,
+          "endedAt": 1793934982572,
+          "durationMs": 61000,
+          "state": "done",
+          "prompt": "核对 0.2 → 0.3 的 API 兼容性。",
+          "text": "",
+          "steps": 8,
+          "tools": 6,
+          "errors": 0,
+          "tokens": 15400,
+          "chain": [
+            {
+              "id": "s5-t1-c0",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s5-t1-c1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "盘点 Slot 与 Session API 能力",
+              "category": "code",
+              "status": "done",
+              "durationMs": 2100
+            },
+            {
+              "id": "s5-t1-c2",
+              "name": "todo_write",
+              "label": "更新计划",
+              "detail": "3 项计划",
+              "category": "plan",
+              "status": "done",
+              "durationMs": 3000
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 2,
+          "startedAt": 1793935641572,
+          "endedAt": 1793935723572,
+          "durationMs": 82000,
+          "state": "done",
+          "prompt": "把破坏性变更逐条列出来。",
+          "text": "",
+          "steps": 7,
+          "tools": 7,
+          "errors": 0,
+          "tokens": 18800,
+          "chain": [
+            {
+              "id": "s5-t2-c0",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "校验侧边栏在窄屏下的折叠行为",
+              "category": "code",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s5-t2-c1",
+              "name": "edit",
+              "label": "编辑文件",
+              "detail": "src/styles.mjs",
+              "category": "file",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 3,
+          "startedAt": 1793936361572,
+          "endedAt": 1793936464572,
+          "durationMs": 103000,
+          "state": "done",
+          "prompt": "确认沙箱策略的默认值。",
+          "text": "",
+          "steps": 9,
+          "tools": 6,
+          "errors": 0,
+          "tokens": 22200,
+          "chain": [
+            {
+              "id": "s5-t3-c0",
+              "name": "write",
+              "label": "写入文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s5-t3-c1",
+              "name": "present",
+              "label": "交付文件",
+              "detail": "README.md、client.js",
+              "category": "deliver",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 3,
+          "models": {
+            "deepseek-v4.1-flash": 3
+          }
+        },
+        {
+          "index": 4,
+          "startedAt": 1793937081572,
+          "endedAt": 1793937205572,
+          "durationMs": 124000,
+          "state": "done",
+          "prompt": "检查插件 manifest 的版本约束。",
+          "text": "",
+          "steps": 8,
+          "tools": 7,
+          "errors": 0,
+          "tokens": 25600,
+          "chain": [
+            {
+              "id": "s5-t4-c0",
+              "name": "web_search",
+              "label": "搜索网页",
+              "detail": "对比度与色阶规范",
+              "category": "search",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s5-t4-c1",
+              "name": "computer_use",
+              "label": "操作电脑",
+              "detail": "截取登录页对比",
+              "category": "computer",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 5,
+          "startedAt": 1793937801572,
+          "endedAt": 1793937946572,
+          "durationMs": 145000,
+          "state": "done",
+          "prompt": "验证 ModuleLoader 的注入顺序。",
+          "text": "",
+          "steps": 7,
+          "tools": 6,
+          "errors": 0,
+          "tokens": 29000,
+          "chain": [
+            {
+              "id": "s5-t5-c0",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s5-t5-c1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "盘点 Slot 与 Session API 能力",
+              "category": "code",
+              "status": "done",
+              "durationMs": 2100
+            },
+            {
+              "id": "s5-t5-c2",
+              "name": "todo_write",
+              "label": "更新计划",
+              "detail": "3 项计划",
+              "category": "plan",
+              "status": "done",
+              "durationMs": 3000
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 6,
+          "startedAt": 1793938521572,
+          "endedAt": 1793938687572,
+          "durationMs": 166000,
+          "state": "done",
+          "prompt": "跑一次端到端的冒烟。",
+          "text": "",
+          "steps": 9,
+          "tools": 7,
+          "errors": 0,
+          "tokens": 32400,
+          "chain": [
+            {
+              "id": "s5-t6-c0",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "校验侧边栏在窄屏下的折叠行为",
+              "category": "code",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s5-t6-c1",
+              "name": "edit",
+              "label": "编辑文件",
+              "detail": "src/styles.mjs",
+              "category": "file",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 3,
+          "models": {
+            "deepseek-v4.1-flash": 3
+          }
+        },
+        {
+          "index": 7,
+          "startedAt": 1793939241572,
+          "endedAt": 1793939428572,
+          "durationMs": 187000,
+          "state": "done",
+          "prompt": "整理成兼容性矩阵。",
+          "text": "",
+          "steps": 8,
+          "tools": 6,
+          "errors": 0,
+          "tokens": 35800,
+          "chain": [
+            {
+              "id": "s5-t7-c0",
+              "name": "write",
+              "label": "写入文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s5-t7-c1",
+              "name": "present",
+              "label": "交付文件",
+              "detail": "README.md、client.js",
+              "category": "deliver",
+              "status": "done",
+              "durationMs": 2100
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        }
+      ],
+      "toolCount": 45,
+      "deliveryState": "none"
+    },
+    {
+      "id": "s6",
+      "title": "子代理 · 依赖版本比对",
+      "cwd": "E:\\dsh-dev",
+      "workspace": "dsh-dev",
+      "origin": "subagent",
+      "blank": false,
+      "running": true,
+      "status": "tool",
+      "statusLabel": "调用工具",
+      "phase": "idle",
+      "phaseLabel": "等待新指令",
+      "model": "deepseek-v4.1-flash",
+      "provider": "",
+      "preset": "",
+      "turn": 2,
+      "step": 4,
+      "currentTool": {
+        "name": "read_file",
+        "label": "读取文件",
+        "detail": "E:\\dsh-dev\\package.json",
+        "startedAt": 1794042198372,
+        "elapsedMs": 3200,
+        "category": "file"
+      },
+      "lastAction": {
+        "id": "call-s6",
+        "name": "read_file",
+        "label": "读取文件",
+        "detail": "E:\\dsh-dev\\package.json",
+        "path": "E:\\dsh-dev\\package.json",
+        "status": "running",
+        "startedAt": 1794042198372,
+        "endedAt": 0,
+        "durationMs": 0,
+        "argsText": "",
+        "result": "",
+        "isError": false
+      },
+      "actions": [
+        {
+          "id": "call-s6",
+          "name": "read_file",
+          "label": "读取文件",
+          "detail": "E:\\dsh-dev\\package.json",
+          "path": "E:\\dsh-dev\\package.json",
+          "status": "running",
+          "startedAt": 1794042198372,
+          "endedAt": 0,
+          "durationMs": 0,
+          "argsText": "",
+          "result": "",
+          "isError": false
+        }
+      ],
+      "todos": null,
+      "currentTodo": null,
+      "progress": null,
+      "tokens": {
+        "uncachedInputTokens": 120000,
+        "outputTokens": 9000,
+        "cacheReadTokens": 780000,
+        "cacheWriteTokens": 2000
+      },
+      "tokenTotal": 911000,
+      "usagePromptTokens": 170000,
+      "contextWindow": 1000000,
+      "contextRatio": 0.17,
+      "contextPercent": 17,
+      "stats": {
+        "turns": 2,
+        "steps": 9,
+        "llmMs": 154000,
+        "toolMs": 72000
+      },
+      "pendingInput": [],
+      "queueLength": 0,
+      "deliverables": [],
+      "deliverableCount": 0,
+      "lastText": "",
+      "lastPrompt": "",
+      "reasoning": "",
+      "elapsedMs": 15000,
+      "lastEventAt": 0,
+      "lastEventAgo": null,
+      "updatedAt": 1794042183572,
+      "unread": false,
+      "stream": "idle",
+      "error": null,
+      "presetLabel": "默认预设",
+      "pinned": false,
+      "turnTimeMs": 45000,
+      "totalTimeMs": 420000,
+      "archived": false,
+      "turns": [
+        {
+          "index": 1,
+          "startedAt": 1794021303572,
+          "endedAt": 1794021364572,
+          "durationMs": 61000,
+          "state": "done",
+          "prompt": "对比两个分支的依赖版本。",
+          "text": "",
+          "steps": 5,
+          "tools": 3,
+          "errors": 0,
+          "tokens": 15400,
+          "chain": [
+            {
+              "id": "s6-t1-c0",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s6-t1-c1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "盘点 Slot 与 Session API 能力",
+              "category": "code",
+              "status": "done",
+              "durationMs": 2100
+            },
+            {
+              "id": "s6-t1-c2",
+              "name": "todo_write",
+              "label": "更新计划",
+              "detail": "3 项计划",
+              "category": "plan",
+              "status": "done",
+              "durationMs": 3000
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 2,
+          "startedAt": 1794042156572,
+          "endedAt": 0,
+          "durationMs": 45000,
+          "state": "running",
+          "prompt": "把差异写进报告，标出会影响运行时的项。",
+          "text": "",
+          "steps": 4,
+          "tools": 4,
+          "errors": 0,
+          "tokens": 18800,
+          "chain": [
+            {
+              "id": "s6-t2-c0",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "校验侧边栏在窄屏下的折叠行为",
+              "category": "code",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s6-t2-c1",
+              "name": "edit",
+              "label": "编辑文件",
+              "detail": "src/styles.mjs",
+              "category": "file",
+              "status": "running",
+              "durationMs": 0
+            }
+          ],
+          "deliverables": [],
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          }
+        }
+      ],
+      "toolCount": 7,
+      "deliveryState": "none",
+      "parentId": "s5"
+    },
+    {
+      "id": "s7",
+      "title": "子代理 · 回归用例补写",
+      "cwd": "E:\\dsh-dev",
+      "workspace": "dsh-dev",
+      "origin": "subagent",
+      "blank": false,
+      "running": true,
+      "status": "tool",
+      "statusLabel": "调用工具",
+      "phase": "idle",
+      "phaseLabel": "等待新指令",
+      "model": "deepseek-v4.1-flash",
+      "provider": "",
+      "preset": "",
+      "turn": 2,
+      "step": 4,
+      "currentTool": {
+        "name": "read_file",
+        "label": "读取文件",
+        "detail": "E:\\dsh-dev\\package.json",
+        "startedAt": 1794042198372,
+        "elapsedMs": 3200,
+        "category": "file"
+      },
+      "lastAction": {
+        "id": "call-s6",
+        "name": "read_file",
+        "label": "读取文件",
+        "detail": "E:\\dsh-dev\\package.json",
+        "path": "E:\\dsh-dev\\package.json",
+        "status": "running",
+        "startedAt": 1794042198372,
+        "endedAt": 0,
+        "durationMs": 0,
+        "argsText": "",
+        "result": "",
+        "isError": false
+      },
+      "actions": [
+        {
+          "id": "call-s6",
+          "name": "read_file",
+          "label": "读取文件",
+          "detail": "E:\\dsh-dev\\package.json",
+          "path": "E:\\dsh-dev\\package.json",
+          "status": "running",
+          "startedAt": 1794042198372,
+          "endedAt": 0,
+          "durationMs": 0,
+          "argsText": "",
+          "result": "",
+          "isError": false
+        }
+      ],
+      "todos": null,
+      "currentTodo": null,
+      "progress": null,
+      "tokens": {
+        "uncachedInputTokens": 120000,
+        "outputTokens": 9000,
+        "cacheReadTokens": 780000,
+        "cacheWriteTokens": 2000
+      },
+      "tokenTotal": 911000,
+      "usagePromptTokens": 170000,
+      "contextWindow": 1000000,
+      "contextRatio": 0.17,
+      "contextPercent": 17,
+      "stats": {
+        "turns": 2,
+        "steps": 9,
+        "llmMs": 154000,
+        "toolMs": 72000
+      },
+      "pendingInput": [],
+      "queueLength": 0,
+      "deliverables": [],
+      "deliverableCount": 0,
+      "lastText": "",
+      "lastPrompt": "",
+      "reasoning": "",
+      "elapsedMs": 15000,
+      "lastEventAt": 0,
+      "lastEventAgo": null,
+      "updatedAt": 1794042183572,
+      "unread": false,
+      "stream": "idle",
+      "error": null,
+      "presetLabel": "默认预设",
+      "pinned": false,
+      "turnTimeMs": 45000,
+      "totalTimeMs": 420000,
+      "archived": false,
+      "turns": [
+        {
+          "index": 1,
+          "startedAt": 1794021303572,
+          "endedAt": 1794021364572,
+          "durationMs": 61000,
+          "state": "done",
+          "prompt": "补写登录页视觉回归的用例。",
+          "text": "",
+          "steps": 5,
+          "tools": 3,
+          "errors": 0,
+          "tokens": 15400,
+          "chain": [
+            {
+              "id": "s7-t1-c0",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "src/ui.js",
+              "category": "file",
+              "status": "done",
+              "durationMs": 1200
+            },
+            {
+              "id": "s7-t1-c1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "盘点 Slot 与 Session API 能力",
+              "category": "code",
+              "status": "done",
+              "durationMs": 2100
+            },
+            {
+              "id": "s7-t1-c2",
+              "name": "todo_write",
+              "label": "更新计划",
+              "detail": "3 项计划",
+              "category": "plan",
+              "status": "done",
+              "durationMs": 3000
+            }
+          ],
+          "deliverables": [],
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          }
+        },
+        {
+          "index": 2,
+          "startedAt": 1794042156572,
+          "endedAt": 0,
+          "durationMs": 45000,
+          "state": "running",
+          "prompt": "把失败的用例也列出来。",
+          "text": "",
+          "steps": 4,
+          "tools": 4,
+          "errors": 0,
+          "tokens": 18800,
+          "chain": [
+            {
+              "id": "s7-t2-c0",
+              "name": "edit",
+              "label": "编辑文件",
+              "detail": "src/styles.mjs",
+              "category": "file",
+              "status": "running",
+              "durationMs": 0
+            }
+          ],
+          "deliverables": [],
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          }
+        }
+      ],
+      "toolCount": 7,
+      "deliveryState": "none",
+      "parentId": "s1"
+    }
+  ],
+  "selected": {
+    "id": "s1",
+    "title": "会话雷达插件开发",
+    "cwd": "E:\\dsh-dev",
+    "workspace": "dsh-dev",
+    "blank": false,
+    "running": true,
+    "status": "tool",
+    "statusLabel": "调用工具",
+    "phase": "tool",
+    "phaseLabel": "正在调用工具",
+    "model": "deepseek-v4.1-flash",
+    "provider": "",
+    "preset": "",
+    "turn": 3,
+    "step": 9,
+    "currentTool": {
+      "name": "run_code",
+      "label": "执行代码",
+      "detail": "校验侧边栏在窄屏下的折叠行为",
+      "startedAt": 1794042193171,
+      "elapsedMs": 8401,
+      "category": "code"
+    },
+    "lastAction": {
+      "id": "call-s1",
+      "name": "run_code",
+      "label": "执行代码",
+      "detail": "校验侧边栏在窄屏下的折叠行为",
+      "path": "",
+      "status": "running",
+      "startedAt": 1794042193171,
+      "endedAt": 0,
+      "durationMs": 0,
+      "argsText": "",
+      "result": "",
+      "isError": false
+    },
+    "actions": [
+      {
+        "id": "call-s1",
+        "name": "run_code",
+        "label": "执行代码",
+        "detail": "校验侧边栏在窄屏下的折叠行为",
+        "path": "",
+        "status": "running",
+        "startedAt": 1794042193171,
+        "endedAt": 0,
+        "durationMs": 0,
+        "argsText": "",
+        "result": "",
+        "isError": false
+      }
+    ],
+    "todos": [
+      {
+        "content": "盘点 DSH 插件槽位与 Session API",
+        "status": "completed"
+      },
+      {
+        "content": "实现侧边栏实时雷达",
+        "status": "in_progress"
+      },
+      {
+        "content": "验证交付物与用量视图",
+        "status": "pending"
+      }
+    ],
+    "currentTodo": {
+      "content": "实现侧边栏实时雷达",
+      "status": "in_progress"
+    },
+    "progress": {
+      "done": 1,
+      "total": 3,
+      "percent": 33
+    },
+    "tokens": {
+      "uncachedInputTokens": 120000,
+      "outputTokens": 9000,
+      "cacheReadTokens": 780000,
+      "cacheWriteTokens": 2000
+    },
+    "tokenTotal": 911000,
+    "usagePromptTokens": 460000,
+    "contextWindow": 1000000,
+    "contextRatio": 0.46,
+    "contextPercent": 46,
+    "stats": {
+      "turns": 3,
+      "steps": 24,
+      "llmMs": 154000,
+      "toolMs": 72000
+    },
+    "pendingInput": [],
+    "queueLength": 0,
+    "deliverables": [
+      {
+        "path": "E:\\dsh-dev\\README.md",
+        "name": "README.md",
+        "extension": "md",
+        "description": "安装与使用说明",
+        "kind": "presented",
+        "tool": "present",
+        "at": 1794042171571,
+        "turn": 3
+      },
+      {
+        "path": "E:\\dsh-dev\\lib\\client.js",
+        "name": "client.js",
+        "extension": "js",
+        "description": "插件浏览器入口",
+        "kind": "changed",
+        "tool": "write",
+        "at": 1794042101571,
+        "turn": 3
+      }
+    ],
+    "deliverableCount": 2,
+    "lastText": "已接入 Session Controller：活跃会话、事件流和投影都在一个 store 中汇合。",
+    "lastPrompt": "",
+    "reasoning": "",
+    "elapsedMs": 15001,
+    "lastEventAt": 0,
+    "lastEventAgo": null,
+    "updatedAt": 1794042171572,
+    "unread": false,
+    "stream": "idle",
+    "error": null,
+    "presetLabel": "默认预设",
+    "pinned": true,
+    "turnTimeMs": 45000,
+    "totalTimeMs": 120000,
+    "archived": false,
+    "turns": [
+      {
+        "index": 1,
+        "startedAt": 1794021291572,
+        "endedAt": 1794021352572,
+        "durationMs": 61000,
+        "state": "done",
+        "prompt": "盘点 DSH 的插件槽位和会话 API，先给出接入方案。",
+        "text": "",
+        "steps": 8,
+        "tools": 7,
+        "errors": 0,
+        "tokens": 15400,
+        "chain": [
+          {
+            "id": "s1-t1-c0",
+            "name": "read_file",
+            "label": "读取文件",
+            "detail": "src/ui.js",
+            "category": "file",
+            "status": "done",
+            "durationMs": 1200
+          },
+          {
+            "id": "s1-t1-c1",
+            "name": "run_code",
+            "label": "执行代码",
+            "detail": "盘点 Slot 与 Session API 能力",
+            "category": "code",
+            "status": "done",
+            "durationMs": 2100
+          },
+          {
+            "id": "s1-t1-c2",
+            "name": "todo_write",
+            "label": "更新计划",
+            "detail": "3 项计划",
+            "category": "plan",
+            "status": "done",
+            "durationMs": 3000
+          }
+        ],
+        "deliverables": [],
+        "calls": 2,
+        "models": {
+          "deepseek-v4.1-flash": 2
+        }
+      },
+      {
+        "index": 2,
+        "startedAt": 1794022011572,
+        "endedAt": 1794022093572,
+        "durationMs": 82000,
+        "state": "done",
+        "prompt": "把右侧雷达做成常驻入口，带上实时状态和等待提醒。",
+        "text": "",
+        "steps": 7,
+        "tools": 8,
+        "errors": 0,
+        "tokens": 18800,
+        "chain": [
+          {
+            "id": "s1-t2-c0",
+            "name": "run_code",
+            "label": "执行代码",
+            "detail": "校验侧边栏在窄屏下的折叠行为",
+            "category": "code",
+            "status": "done",
+            "durationMs": 1200
+          },
+          {
+            "id": "s1-t2-c1",
+            "name": "edit",
+            "label": "编辑文件",
+            "detail": "src/styles.mjs",
+            "category": "file",
+            "status": "done",
+            "durationMs": 2100
+          }
+        ],
+        "deliverables": [],
+        "calls": 2,
+        "models": {
+          "deepseek-v4.1-flash": 2
+        }
+      },
+      {
+        "index": 3,
+        "startedAt": 1794042156572,
+        "endedAt": 0,
+        "durationMs": 45000,
+        "state": "running",
+        "prompt": "给总览页加上卡片矩阵：进行中、最近会话、交付物、用量。",
+        "text": "",
+        "steps": 9,
+        "tools": 7,
+        "errors": 0,
+        "tokens": 22200,
+        "chain": [
+          {
+            "id": "s1-t3-c0",
+            "name": "write",
+            "label": "写入文件",
+            "detail": "src/ui.js",
+            "category": "file",
+            "status": "done",
+            "durationMs": 1200
+          },
+          {
+            "id": "s1-t3-c1",
+            "name": "present",
+            "label": "交付文件",
+            "detail": "README.md、client.js",
+            "category": "deliver",
+            "status": "running",
+            "durationMs": 0
+          }
+        ],
+        "deliverables": [
+          {
+            "path": "E:\\dsh-dev\\README.md",
+            "name": "README.md",
+            "extension": "md",
+            "description": "安装与使用说明",
+            "kind": "presented",
+            "tool": "present",
+            "at": 1794042171571,
+            "turn": 3
+          },
+          {
+            "path": "E:\\dsh-dev\\lib\\client.js",
+            "name": "client.js",
+            "extension": "js",
+            "description": "插件浏览器入口",
+            "kind": "changed",
+            "tool": "write",
+            "at": 1794042101571,
+            "turn": 3
+          }
+        ],
+        "calls": 3,
+        "models": {
+          "deepseek-v4.1-flash": 3
+        }
+      }
+    ],
+    "toolCount": 22,
+    "deliveryState": "delivered"
+  },
+  "counts": {
+    "active": 3,
+    "waiting": 1,
+    "unread": 1,
+    "pinned": 1,
+    "tokenSum": 4783000,
+    "steps": 177,
+    "deliverables": 5,
+    "total": 7,
+    "workspaces": 2,
+    "archived": 1,
+    "workspacePinned": 1
+  },
+  "deliverables": [
+    {
+      "path": "E:\\dsh-dev\\README.md",
+      "name": "README.md",
+      "extension": "md",
+      "description": "安装与使用说明",
+      "kind": "presented",
+      "tool": "present",
+      "at": 1794042171571,
+      "turn": 3,
+      "sessionId": "s1",
+      "sessionTitle": "会话雷达插件开发"
+    },
+    {
+      "path": "E:\\dsh-dev\\lib\\client.js",
+      "name": "client.js",
+      "extension": "js",
+      "description": "插件浏览器入口",
+      "kind": "changed",
+      "tool": "write",
+      "at": 1794042101571,
+      "turn": 3,
+      "sessionId": "s1",
+      "sessionTitle": "会话雷达插件开发"
+    },
+    {
+      "path": "E:\\dsh-dev\\src\\styles.mjs",
+      "name": "styles.mjs",
+      "extension": "mjs",
+      "description": "深色主题对比度修正",
+      "kind": "changed",
+      "tool": "edit",
+      "at": 1794042111572,
+      "turn": 4,
+      "sessionId": "s2",
+      "sessionTitle": "登录页视觉回归"
+    },
+    {
+      "path": "E:\\ops\\metrics.xlsx",
+      "name": "metrics.xlsx",
+      "extension": "xlsx",
+      "description": "指标明细",
+      "kind": "presented",
+      "tool": "present",
+      "at": 1794041501572,
+      "turn": 3,
+      "sessionId": "s4",
+      "sessionTitle": "周报自动汇总"
+    },
+    {
+      "path": "E:\\ops\\weekly-2026-11-07.docx",
+      "name": "weekly-2026-11-07.docx",
+      "extension": "docx",
+      "description": "本周运营周报",
+      "kind": "presented",
+      "tool": "present",
+      "at": 1794041481572,
+      "turn": 3,
+      "sessionId": "s4",
+      "sessionTitle": "周报自动汇总"
+    }
+  ],
+  "ui": {
+    "open": false,
+    "tab": "live",
+    "selectedId": null,
+    "query": "",
+    "searchStatus": "idle",
+    "searchResults": [],
+    "searchQuery": "",
+    "searchHasMore": false,
+    "prefsOpen": false,
+    "bulk": {
+      "status": "idle",
+      "action": null,
+      "message": "",
+      "error": "",
+      "ids": []
+    },
+    "filters": {
+      "range": "7d",
+      "workspace": "all",
+      "model": "all"
+    },
+    "deliverableWorkspace": "all",
+    "deliverableRange": "7d",
+    "usageRange": "7d",
+    "workspaceRange": "7d",
+    "workspaceFocus": null,
+    "workspaceFocusAt": 0
+  },
+  "prefs": {
+    "showRail": true,
+    "includeSubagents": true,
+    "compact": false,
+    "completionBadge": true,
+    "cardTint": "sand",
+    "cardTexture": "paper",
+    "defaultRange": "7d",
+    "showQuickBar": true,
+    "quickBarPos": null,
+    "railPos": null,
+    "activityRange": {
+      "mode": "custom",
+      "from": "2026-10-09",
+      "to": "2026-11-07",
+      "grain": "day",
+      "timeMode": "busy"
+    }
+  },
+  "phase": "ready",
+  "streaming": "live",
+  "error": null,
+  "lastSyncAt": 1794042196572,
+  "now": 1794042201572,
+  "workspaces": [
+    {
+      "id": "w-dsh",
+      "title": "dsh-dev",
+      "path": "E:/dsh-dev",
+      "sessionIds": [
+        "s1",
+        "s2",
+        "s3"
+      ],
+      "sessions": [
+        {
+          "id": "s1",
+          "title": "会话雷达插件开发",
+          "cwd": "E:\\dsh-dev",
+          "workspace": "dsh-dev",
+          "blank": false,
+          "running": true,
+          "status": "tool",
+          "statusLabel": "调用工具",
+          "phase": "tool",
+          "phaseLabel": "正在调用工具",
+          "model": "deepseek-v4.1-flash",
+          "provider": "",
+          "preset": "",
+          "turn": 3,
+          "step": 12,
+          "currentTool": {
+            "name": "run_code",
+            "label": "执行代码",
+            "detail": "校验侧边栏在窄屏下的折叠行为",
+            "startedAt": 1794042193171,
+            "elapsedMs": 8401,
+            "category": "code"
+          },
+          "lastAction": {
+            "id": "call-s1",
+            "name": "run_code",
+            "label": "执行代码",
+            "detail": "校验侧边栏在窄屏下的折叠行为",
+            "path": "",
+            "status": "running",
+            "startedAt": 1794042193171,
+            "endedAt": 0,
+            "durationMs": 0,
+            "argsText": "",
+            "result": "",
+            "isError": false
+          },
+          "actions": [
+            {
+              "id": "call-s1",
+              "name": "run_code",
+              "label": "执行代码",
+              "detail": "校验侧边栏在窄屏下的折叠行为",
+              "path": "",
+              "status": "running",
+              "startedAt": 1794042193171,
+              "endedAt": 0,
+              "durationMs": 0,
+              "argsText": "",
+              "result": "",
+              "isError": false
+            }
+          ],
+          "todos": [
+            {
+              "content": "盘点 DSH 插件槽位与 Session API",
+              "status": "completed"
+            },
+            {
+              "content": "实现侧边栏实时雷达",
+              "status": "in_progress"
+            },
+            {
+              "content": "验证交付物与用量视图",
+              "status": "pending"
+            }
+          ],
+          "currentTodo": {
+            "content": "实现侧边栏实时雷达",
+            "status": "in_progress"
+          },
+          "progress": {
+            "done": 1,
+            "total": 3,
+            "percent": 33
+          },
+          "tokens": {
+            "uncachedInputTokens": 120000,
+            "outputTokens": 9000,
+            "cacheReadTokens": 780000,
+            "cacheWriteTokens": 2000
+          },
+          "tokenTotal": 911000,
+          "usagePromptTokens": 460000,
+          "contextWindow": 1000000,
+          "contextRatio": 0.46,
+          "contextPercent": 46,
+          "stats": {
+            "turns": 3,
+            "steps": 27,
+            "llmMs": 154000,
+            "toolMs": 72000
+          },
+          "pendingInput": [],
+          "queueLength": 0,
+          "deliverables": [
+            {
+              "path": "E:\\dsh-dev\\README.md",
+              "name": "README.md",
+              "extension": "md",
+              "description": "安装与使用说明",
+              "kind": "presented",
+              "tool": "present",
+              "at": 1794042171571,
+              "turn": 3
+            },
+            {
+              "path": "E:\\dsh-dev\\lib\\client.js",
+              "name": "client.js",
+              "extension": "js",
+              "description": "插件浏览器入口",
+              "kind": "changed",
+              "tool": "write",
+              "at": 1794042101571,
+              "turn": 3
+            }
+          ],
+          "deliverableCount": 2,
+          "lastText": "已接入 Session Controller：活跃会话、事件流和投影都在一个 store 中汇合。",
+          "lastPrompt": "",
+          "reasoning": "",
+          "elapsedMs": 15001,
+          "lastEventAt": 0,
+          "lastEventAgo": null,
+          "updatedAt": 1794042171572,
+          "unread": false,
+          "stream": "idle",
+          "error": null,
+          "presetLabel": "默认预设",
+          "pinned": true,
+          "turnTimeMs": 45000,
+          "totalTimeMs": 120000,
+          "archived": false
+        },
+        {
+          "id": "s2",
+          "title": "登录页视觉回归",
+          "cwd": "E:\\web-shell",
+          "workspace": "web-shell",
+          "blank": false,
+          "running": true,
+          "status": "running",
+          "statusLabel": "运行中",
+          "phase": "idle",
+          "phaseLabel": "等待新指令",
+          "model": "deepseek-v4.1-flash",
+          "provider": "",
+          "preset": "",
+          "turn": 3,
+          "step": 12,
+          "currentTool": null,
+          "lastAction": null,
+          "actions": [],
+          "todos": [
+            {
+              "content": "采集基线截图",
+              "status": "completed"
+            },
+            {
+              "content": "修复对比度问题",
+              "status": "in_progress"
+            }
+          ],
+          "currentTodo": {
+            "content": "修复对比度问题",
+            "status": "in_progress"
+          },
+          "progress": {
+            "done": 1,
+            "total": 2,
+            "percent": 50
+          },
+          "tokens": {
+            "uncachedInputTokens": 120000,
+            "outputTokens": 9000,
+            "cacheReadTokens": 780000,
+            "cacheWriteTokens": 2000
+          },
+          "tokenTotal": 911000,
+          "usagePromptTokens": 710000,
+          "contextWindow": 1000000,
+          "contextRatio": 0.71,
+          "contextPercent": 71,
+          "stats": {
+            "turns": 3,
+            "steps": 27,
+            "llmMs": 154000,
+            "toolMs": 72000
+          },
+          "pendingInput": [],
+          "queueLength": 0,
+          "deliverables": [],
+          "deliverableCount": 0,
+          "lastText": "正在核对深色主题下的焦点环和禁用态。",
+          "lastPrompt": "",
+          "reasoning": "",
+          "elapsedMs": 15000,
+          "lastEventAt": 0,
+          "lastEventAgo": null,
+          "updatedAt": 1794042106572,
+          "unread": false,
+          "stream": "idle",
+          "error": null,
+          "presetLabel": "默认预设",
+          "pinned": false,
+          "turnTimeMs": 45000,
+          "totalTimeMs": 180000,
+          "archived": false
+        },
+        {
+          "id": "s3",
+          "title": "修复导出超时",
+          "cwd": "E:\\api-server",
+          "workspace": "api-server",
+          "blank": false,
+          "running": true,
+          "status": "approval",
+          "statusLabel": "等待审批",
+          "phase": "thinking",
+          "phaseLabel": "正在思考",
+          "model": "deepseek-v4.1-flash",
+          "provider": "",
+          "preset": "",
+          "turn": 3,
+          "step": 12,
+          "currentTool": null,
+          "lastAction": null,
+          "actions": [],
+          "todos": null,
+          "currentTodo": null,
+          "progress": null,
+          "tokens": {
+            "uncachedInputTokens": 120000,
+            "outputTokens": 9000,
+            "cacheReadTokens": 780000,
+            "cacheWriteTokens": 2000
+          },
+          "tokenTotal": 911000,
+          "usagePromptTokens": 880000,
+          "contextWindow": 1000000,
+          "contextRatio": 0.88,
+          "contextPercent": 88,
+          "stats": {
+            "turns": 3,
+            "steps": 27,
+            "llmMs": 154000,
+            "toolMs": 72000
+          },
+          "pendingInput": [
+            "approval"
+          ],
+          "queueLength": 0,
+          "deliverables": [],
+          "deliverableCount": 0,
+          "lastText": "需要你确认是否允许执行 pwsh 命令重启本地服务。",
+          "lastPrompt": "",
+          "reasoning": "",
+          "elapsedMs": 15000,
+          "lastEventAt": 0,
+          "lastEventAgo": null,
+          "updatedAt": 1794041961572,
+          "unread": false,
+          "stream": "idle",
+          "error": null,
+          "presetLabel": "默认预设",
+          "pinned": false,
+          "turnTimeMs": 45000,
+          "totalTimeMs": 240000,
+          "archived": false
+        }
+      ],
+      "count": 3,
+      "activeCount": 2,
+      "archivedCount": 1,
+      "updatedAt": 1794046546529,
+      "pinned": true
+    },
+    {
+      "id": "w-v4",
+      "title": "v4test",
+      "path": "E:/Code/v4test",
+      "sessionIds": [
+        "s4",
+        "s5",
+        "s6"
+      ],
+      "sessions": [
+        {
+          "id": "s4",
+          "title": "周报自动汇总",
+          "cwd": "E:\\ops",
+          "workspace": "ops",
+          "blank": false,
+          "running": false,
+          "status": "done",
+          "statusLabel": "刚完成",
+          "phase": "done",
+          "phaseLabel": "本轮已完成",
+          "model": "deepseek-v4.1-flash",
+          "provider": "",
+          "preset": "",
+          "turn": 3,
+          "step": 12,
+          "currentTool": null,
+          "lastAction": null,
+          "actions": [],
+          "todos": null,
+          "currentTodo": null,
+          "progress": null,
+          "tokens": {
+            "uncachedInputTokens": 120000,
+            "outputTokens": 9000,
+            "cacheReadTokens": 780000,
+            "cacheWriteTokens": 2000
+          },
+          "tokenTotal": 911000,
+          "usagePromptTokens": 630000,
+          "contextWindow": 1000000,
+          "contextRatio": 0.63,
+          "contextPercent": 63,
+          "stats": {
+            "turns": 3,
+            "steps": 27,
+            "llmMs": 154000,
+            "toolMs": 72000
+          },
+          "pendingInput": [],
+          "queueLength": 0,
+          "deliverables": [
+            {
+              "path": "E:\\ops\\metrics.xlsx",
+              "name": "metrics.xlsx",
+              "extension": "xlsx",
+              "description": "指标明细",
+              "kind": "presented",
+              "tool": "present",
+              "at": 1794041501572,
+              "turn": 3
+            },
+            {
+              "path": "E:\\ops\\weekly-2026-11-07.docx",
+              "name": "weekly-2026-11-07.docx",
+              "extension": "docx",
+              "description": "本周运营周报",
+              "kind": "presented",
+              "tool": "present",
+              "at": 1794041481572,
+              "turn": 3
+            }
+          ],
+          "deliverableCount": 2,
+          "lastText": "周报与指标明细已经生成，关键结论已放在首页摘要。",
+          "lastPrompt": "",
+          "reasoning": "",
+          "elapsedMs": 60000,
+          "lastEventAt": 0,
+          "lastEventAgo": null,
+          "updatedAt": 1794041421572,
+          "unread": true,
+          "stream": "idle",
+          "error": null,
+          "presetLabel": "默认预设",
+          "pinned": false,
+          "turnTimeMs": 0,
+          "totalTimeMs": 300000,
+          "archived": false
+        },
+        {
+          "id": "s5",
+          "title": "API 兼容性核查",
+          "cwd": "E:\\dsh-sdk",
+          "workspace": "dsh-sdk",
+          "blank": false,
+          "running": false,
+          "status": "done",
+          "statusLabel": "刚完成",
+          "phase": "done",
+          "phaseLabel": "本轮已完成",
+          "model": "deepseek-v4.1-flash",
+          "provider": "",
+          "preset": "",
+          "turn": 3,
+          "step": 12,
+          "currentTool": null,
+          "lastAction": null,
+          "actions": [],
+          "todos": null,
+          "currentTodo": null,
+          "progress": null,
+          "tokens": {
+            "uncachedInputTokens": 42000,
+            "outputTokens": 6000,
+            "cacheReadTokens": 180000,
+            "cacheWriteTokens": 0
+          },
+          "tokenTotal": 228000,
+          "usagePromptTokens": 240000,
+          "contextWindow": 1000000,
+          "contextRatio": 0.24,
+          "contextPercent": 24,
+          "stats": {
+            "turns": 8,
+            "steps": 64,
+            "llmMs": 154000,
+            "toolMs": 72000
+          },
+          "pendingInput": [],
+          "queueLength": 0,
+          "deliverables": [],
+          "deliverableCount": 0,
+          "lastText": "兼容性矩阵已核对完毕，没有发现破坏性变更。",
+          "lastPrompt": "",
+          "reasoning": "",
+          "elapsedMs": 60000,
+          "lastEventAt": 0,
+          "lastEventAgo": null,
+          "updatedAt": 1793955801572,
+          "unread": false,
+          "stream": "idle",
+          "error": null,
+          "presetLabel": "默认预设",
+          "pinned": false,
+          "turnTimeMs": 0,
+          "totalTimeMs": 360000,
+          "archived": false
+        },
+        {
+          "id": "s6",
+          "title": "子代理 · 依赖版本比对",
+          "cwd": "E:\\dsh-dev",
+          "workspace": "dsh-dev",
+          "origin": "subagent",
+          "blank": false,
+          "running": true,
+          "status": "tool",
+          "statusLabel": "调用工具",
+          "phase": "idle",
+          "phaseLabel": "等待新指令",
+          "model": "deepseek-v4.1-flash",
+          "provider": "",
+          "preset": "",
+          "turn": 3,
+          "step": 12,
+          "currentTool": {
+            "name": "read_file",
+            "label": "读取文件",
+            "detail": "E:\\dsh-dev\\package.json",
+            "startedAt": 1794042198372,
+            "elapsedMs": 3200,
+            "category": "file"
+          },
+          "lastAction": {
+            "id": "call-s6",
+            "name": "read_file",
+            "label": "读取文件",
+            "detail": "E:\\dsh-dev\\package.json",
+            "path": "E:\\dsh-dev\\package.json",
+            "status": "running",
+            "startedAt": 1794042198372,
+            "endedAt": 0,
+            "durationMs": 0,
+            "argsText": "",
+            "result": "",
+            "isError": false
+          },
+          "actions": [
+            {
+              "id": "call-s6",
+              "name": "read_file",
+              "label": "读取文件",
+              "detail": "E:\\dsh-dev\\package.json",
+              "path": "E:\\dsh-dev\\package.json",
+              "status": "running",
+              "startedAt": 1794042198372,
+              "endedAt": 0,
+              "durationMs": 0,
+              "argsText": "",
+              "result": "",
+              "isError": false
+            }
+          ],
+          "todos": null,
+          "currentTodo": null,
+          "progress": null,
+          "tokens": {
+            "uncachedInputTokens": 120000,
+            "outputTokens": 9000,
+            "cacheReadTokens": 780000,
+            "cacheWriteTokens": 2000
+          },
+          "tokenTotal": 911000,
+          "usagePromptTokens": 170000,
+          "contextWindow": 1000000,
+          "contextRatio": 0.17,
+          "contextPercent": 17,
+          "stats": {
+            "turns": 1,
+            "steps": 5,
+            "llmMs": 154000,
+            "toolMs": 72000
+          },
+          "pendingInput": [],
+          "queueLength": 0,
+          "deliverables": [],
+          "deliverableCount": 0,
+          "lastText": "",
+          "lastPrompt": "",
+          "reasoning": "",
+          "elapsedMs": 15000,
+          "lastEventAt": 0,
+          "lastEventAgo": null,
+          "updatedAt": 1794042183572,
+          "unread": false,
+          "stream": "idle",
+          "error": null,
+          "presetLabel": "默认预设",
+          "pinned": false,
+          "turnTimeMs": 45000,
+          "totalTimeMs": 420000,
+          "archived": false
+        }
+      ],
+      "count": 3,
+      "activeCount": 1,
+      "archivedCount": 0,
+      "updatedAt": 1794046486529,
+      "pinned": false
+    }
+  ],
+  "archivedEntries": [
+    {
+      "id": "archived-demo",
+      "title": "归档会话示例",
+      "cwd": "E:\\api-server",
+      "workspace": "api-server",
+      "blank": false,
+      "running": true,
+      "status": "idle",
+      "statusLabel": "已归档",
+      "phase": "thinking",
+      "phaseLabel": "正在思考",
+      "model": "deepseek-v4.1-flash",
+      "provider": "",
+      "preset": "",
+      "turn": 3,
+      "step": 12,
+      "currentTool": null,
+      "lastAction": null,
+      "actions": [],
+      "todos": null,
+      "currentTodo": null,
+      "progress": null,
+      "tokens": {
+        "uncachedInputTokens": 120000,
+        "outputTokens": 9000,
+        "cacheReadTokens": 780000,
+        "cacheWriteTokens": 2000
+      },
+      "tokenTotal": 911000,
+      "usagePromptTokens": 880000,
+      "contextWindow": 1000000,
+      "contextRatio": 0.88,
+      "contextPercent": 88,
+      "stats": {
+        "turns": 3,
+        "steps": 27,
+        "llmMs": 154000,
+        "toolMs": 72000
+      },
+      "pendingInput": [
+        "approval"
+      ],
+      "queueLength": 0,
+      "deliverables": [],
+      "deliverableCount": 0,
+      "lastText": "需要你确认是否允许执行 pwsh 命令重启本地服务。",
+      "lastPrompt": "",
+      "reasoning": "",
+      "elapsedMs": 15000,
+      "lastEventAt": 0,
+      "lastEventAgo": null,
+      "updatedAt": 1794041961572,
+      "unread": false,
+      "stream": "idle",
+      "error": null,
+      "presetLabel": "默认预设",
+      "pinned": false,
+      "turnTimeMs": 45000,
+      "totalTimeMs": 240000,
+      "archived": true
+    }
+  ],
+  "activity": {
+    "2026-11-07": {
+      "tokens": 55400,
+      "durationMs": 10800000,
+      "turns": 3,
+      "sessions": {
+        "s2": {
+          "title": "登录页视觉回归",
+          "tokens": 24000,
+          "durationMs": 5400000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 24000
+          },
+          "spans": [
+            [
+              1794016800000,
+              1794022200000
+            ]
+          ]
+        },
+        "s3": {
+          "title": "修复导出超时",
+          "tokens": 31400,
+          "durationMs": 5400000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1": 2,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 15700,
+            "deepseek-v4.1-flash": 15700
+          },
+          "spans": [
+            [
+              1794020400000,
+              1794025800000
+            ]
+          ]
+        }
+      },
+      "calls": 6,
+      "models": {
+        "deepseek-v4.1-flash": 4,
+        "deepseek-v4.1": 2
+      },
+      "hours": {
+        "10": {
+          "tokens": 10800,
+          "durationMs": 216000,
+          "turns": 0,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 10800,
+              "durationMs": 216000,
+              "turns": 0,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 10800
+              },
+              "spans": [
+                [
+                  1794016800000,
+                  1794017016000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 10800
+          }
+        },
+        "13": {
+          "tokens": 17270,
+          "durationMs": 313500,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s3": {
+              "title": "修复导出超时",
+              "tokens": 17270,
+              "durationMs": 313500,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 8635,
+                "deepseek-v4.1-flash": 8635
+              },
+              "spans": [
+                [
+                  1794027600000,
+                  1794027913500
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 8635,
+            "deepseek-v4.1-flash": 8635
+          }
+        },
+        "14": {
+          "tokens": 14130,
+          "durationMs": 256500,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s3": {
+              "title": "修复导出超时",
+              "tokens": 14130,
+              "durationMs": 256500,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 7065,
+                "deepseek-v4.1-flash": 7065
+              },
+              "spans": [
+                [
+                  1794031200000,
+                  1794031456500
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 7065,
+            "deepseek-v4.1-flash": 7065
+          }
+        },
+        "09": {
+          "tokens": 13200,
+          "durationMs": 264000,
+          "turns": 1,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 13200,
+              "durationMs": 264000,
+              "turns": 1,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 13200
+              },
+              "spans": [
+                [
+                  1794013200000,
+                  1794013464000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 13200
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1-flash": 36933,
+        "deepseek-v4.1": 18467
+      },
+      "spans": [
+        [
+          1794016800000,
+          1794025800000
+        ]
+      ]
+    },
+    "2026-11-06": {
+      "tokens": 49200,
+      "durationMs": 630000,
+      "turns": 4,
+      "sessions": {
+        "s1": {
+          "title": "会话雷达插件开发",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1793926800000,
+              1793926920000
+            ]
+          ]
+        },
+        "s2": {
+          "title": "登录页视觉回归",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1793941200000,
+              1793941410000
+            ]
+          ]
+        },
+        "s4": {
+          "title": "周报自动汇总",
+          "tokens": 23800,
+          "durationMs": 300000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 23800
+          },
+          "spans": [
+            [
+              1793955600000,
+              1793955765000
+            ],
+            [
+              1793959200000,
+              1793959335000
+            ]
+          ]
+        }
+      },
+      "calls": 8,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 5,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1793941200000,
+                  1793941410000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "17": {
+          "tokens": 13090,
+          "durationMs": 165000,
+          "turns": 1,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s4": {
+              "title": "周报自动汇总",
+              "tokens": 13090,
+              "durationMs": 165000,
+              "turns": 1,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 13090
+              },
+              "spans": [
+                [
+                  1793955600000,
+                  1793955765000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 13090
+          }
+        },
+        "18": {
+          "tokens": 10710,
+          "durationMs": 135000,
+          "turns": 0,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s4": {
+              "title": "周报自动汇总",
+              "tokens": 10710,
+              "durationMs": 135000,
+              "turns": 0,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 10710
+              },
+              "spans": [
+                [
+                  1793959200000,
+                  1793959335000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 10710
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s1": {
+              "title": "会话雷达插件开发",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1793926800000,
+                  1793926920000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 12300,
+        "deepseek-v4.1-flash": 30750,
+        "deepseek-v4.1-pro": 6150
+      },
+      "spans": [
+        [
+          1793926800000,
+          1793926920000
+        ],
+        [
+          1793941200000,
+          1793941410000
+        ],
+        [
+          1793955600000,
+          1793955765000
+        ],
+        [
+          1793959200000,
+          1793959335000
+        ]
+      ]
+    },
+    "2026-11-05": {
+      "tokens": 25400,
+      "durationMs": 330000,
+      "turns": 3,
+      "sessions": {
+        "s1": {
+          "title": "会话雷达插件开发",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1793840400000,
+              1793840520000
+            ]
+          ]
+        },
+        "s3": {
+          "title": "修复导出超时",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1793854800000,
+              1793855010000
+            ]
+          ]
+        }
+      },
+      "calls": 6,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 3,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s3": {
+              "title": "修复导出超时",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1793854800000,
+                  1793855010000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s1": {
+              "title": "会话雷达插件开发",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1793840400000,
+                  1793840520000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 8467,
+        "deepseek-v4.1-flash": 12700,
+        "deepseek-v4.1-pro": 4233
+      },
+      "spans": [
+        [
+          1793840400000,
+          1793840520000
+        ],
+        [
+          1793854800000,
+          1793855010000
+        ]
+      ]
+    },
+    "2026-11-03": {
+      "tokens": 25400,
+      "durationMs": 330000,
+      "turns": 3,
+      "sessions": {
+        "s1": {
+          "title": "会话雷达插件开发",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1793667600000,
+              1793667720000
+            ]
+          ]
+        },
+        "s2": {
+          "title": "登录页视觉回归",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1793682000000,
+              1793682210000
+            ]
+          ]
+        }
+      },
+      "calls": 6,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 3,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1793682000000,
+                  1793682210000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s1": {
+              "title": "会话雷达插件开发",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1793667600000,
+                  1793667720000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 8467,
+        "deepseek-v4.1-flash": 12700,
+        "deepseek-v4.1-pro": 4233
+      },
+      "spans": [
+        [
+          1793667600000,
+          1793667720000
+        ],
+        [
+          1793682000000,
+          1793682210000
+        ]
+      ]
+    },
+    "2026-11-02": {
+      "tokens": 49200,
+      "durationMs": 630000,
+      "turns": 4,
+      "sessions": {
+        "s1": {
+          "title": "会话雷达插件开发",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1793581200000,
+              1793581320000
+            ]
+          ]
+        },
+        "s3": {
+          "title": "修复导出超时",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1793595600000,
+              1793595810000
+            ]
+          ]
+        },
+        "s4": {
+          "title": "周报自动汇总",
+          "tokens": 23800,
+          "durationMs": 300000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 23800
+          },
+          "spans": [
+            [
+              1793610000000,
+              1793610165000
+            ],
+            [
+              1793613600000,
+              1793613735000
+            ]
+          ]
+        }
+      },
+      "calls": 8,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 5,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s3": {
+              "title": "修复导出超时",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1793595600000,
+                  1793595810000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "17": {
+          "tokens": 13090,
+          "durationMs": 165000,
+          "turns": 1,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s4": {
+              "title": "周报自动汇总",
+              "tokens": 13090,
+              "durationMs": 165000,
+              "turns": 1,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 13090
+              },
+              "spans": [
+                [
+                  1793610000000,
+                  1793610165000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 13090
+          }
+        },
+        "18": {
+          "tokens": 10710,
+          "durationMs": 135000,
+          "turns": 0,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s4": {
+              "title": "周报自动汇总",
+              "tokens": 10710,
+              "durationMs": 135000,
+              "turns": 0,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 10710
+              },
+              "spans": [
+                [
+                  1793613600000,
+                  1793613735000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 10710
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s1": {
+              "title": "会话雷达插件开发",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1793581200000,
+                  1793581320000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 12300,
+        "deepseek-v4.1-flash": 30750,
+        "deepseek-v4.1-pro": 6150
+      },
+      "spans": [
+        [
+          1793581200000,
+          1793581320000
+        ],
+        [
+          1793595600000,
+          1793595810000
+        ],
+        [
+          1793610000000,
+          1793610165000
+        ],
+        [
+          1793613600000,
+          1793613735000
+        ]
+      ]
+    },
+    "2026-11-01": {
+      "tokens": 25400,
+      "durationMs": 330000,
+      "turns": 3,
+      "sessions": {
+        "s2": {
+          "title": "登录页视觉回归",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1793494800000,
+              1793494920000
+            ]
+          ]
+        },
+        "s3": {
+          "title": "修复导出超时",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1793509200000,
+              1793509410000
+            ]
+          ]
+        }
+      },
+      "calls": 6,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 3,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s3": {
+              "title": "修复导出超时",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1793509200000,
+                  1793509410000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1793494800000,
+                  1793494920000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 8467,
+        "deepseek-v4.1-flash": 12700,
+        "deepseek-v4.1-pro": 4233
+      },
+      "spans": [
+        [
+          1793494800000,
+          1793494920000
+        ],
+        [
+          1793509200000,
+          1793509410000
+        ]
+      ]
+    },
+    "2026-10-30": {
+      "tokens": 25400,
+      "durationMs": 330000,
+      "turns": 3,
+      "sessions": {
+        "s1": {
+          "title": "会话雷达插件开发",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1793322000000,
+              1793322120000
+            ]
+          ]
+        },
+        "s3": {
+          "title": "修复导出超时",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1793336400000,
+              1793336610000
+            ]
+          ]
+        }
+      },
+      "calls": 6,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 3,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s3": {
+              "title": "修复导出超时",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1793336400000,
+                  1793336610000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s1": {
+              "title": "会话雷达插件开发",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1793322000000,
+                  1793322120000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 8467,
+        "deepseek-v4.1-flash": 12700,
+        "deepseek-v4.1-pro": 4233
+      },
+      "spans": [
+        [
+          1793322000000,
+          1793322120000
+        ],
+        [
+          1793336400000,
+          1793336610000
+        ]
+      ]
+    },
+    "2026-10-29": {
+      "tokens": 49200,
+      "durationMs": 630000,
+      "turns": 4,
+      "sessions": {
+        "s2": {
+          "title": "登录页视觉回归",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1793235600000,
+              1793235720000
+            ]
+          ]
+        },
+        "s3": {
+          "title": "修复导出超时",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1793250000000,
+              1793250210000
+            ]
+          ]
+        },
+        "s5": {
+          "title": "API 兼容性核查",
+          "tokens": 23800,
+          "durationMs": 300000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 23800
+          },
+          "spans": [
+            [
+              1793264400000,
+              1793264565000
+            ],
+            [
+              1793268000000,
+              1793268135000
+            ]
+          ]
+        }
+      },
+      "calls": 8,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 5,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s3": {
+              "title": "修复导出超时",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1793250000000,
+                  1793250210000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "17": {
+          "tokens": 13090,
+          "durationMs": 165000,
+          "turns": 1,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s5": {
+              "title": "API 兼容性核查",
+              "tokens": 13090,
+              "durationMs": 165000,
+              "turns": 1,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 13090
+              },
+              "spans": [
+                [
+                  1793264400000,
+                  1793264565000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 13090
+          }
+        },
+        "18": {
+          "tokens": 10710,
+          "durationMs": 135000,
+          "turns": 0,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s5": {
+              "title": "API 兼容性核查",
+              "tokens": 10710,
+              "durationMs": 135000,
+              "turns": 0,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 10710
+              },
+              "spans": [
+                [
+                  1793268000000,
+                  1793268135000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 10710
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1793235600000,
+                  1793235720000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 12300,
+        "deepseek-v4.1-flash": 30750,
+        "deepseek-v4.1-pro": 6150
+      },
+      "spans": [
+        [
+          1793235600000,
+          1793235720000
+        ],
+        [
+          1793250000000,
+          1793250210000
+        ],
+        [
+          1793264400000,
+          1793264565000
+        ],
+        [
+          1793268000000,
+          1793268135000
+        ]
+      ]
+    },
+    "2026-10-28": {
+      "tokens": 25400,
+      "durationMs": 330000,
+      "turns": 3,
+      "sessions": {
+        "s1": {
+          "title": "会话雷达插件开发",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1793149200000,
+              1793149320000
+            ]
+          ]
+        },
+        "s2": {
+          "title": "登录页视觉回归",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1793163600000,
+              1793163810000
+            ]
+          ]
+        }
+      },
+      "calls": 6,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 3,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1793163600000,
+                  1793163810000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s1": {
+              "title": "会话雷达插件开发",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1793149200000,
+                  1793149320000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 8467,
+        "deepseek-v4.1-flash": 12700,
+        "deepseek-v4.1-pro": 4233
+      },
+      "spans": [
+        [
+          1793149200000,
+          1793149320000
+        ],
+        [
+          1793163600000,
+          1793163810000
+        ]
+      ]
+    },
+    "2026-10-26": {
+      "tokens": 25400,
+      "durationMs": 330000,
+      "turns": 3,
+      "sessions": {
+        "s2": {
+          "title": "登录页视觉回归",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1792976400000,
+              1792976520000
+            ]
+          ]
+        },
+        "s3": {
+          "title": "修复导出超时",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1792990800000,
+              1792991010000
+            ]
+          ]
+        }
+      },
+      "calls": 6,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 3,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s3": {
+              "title": "修复导出超时",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1792990800000,
+                  1792991010000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1792976400000,
+                  1792976520000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 8467,
+        "deepseek-v4.1-flash": 12700,
+        "deepseek-v4.1-pro": 4233
+      },
+      "spans": [
+        [
+          1792976400000,
+          1792976520000
+        ],
+        [
+          1792990800000,
+          1792991010000
+        ]
+      ]
+    },
+    "2026-10-25": {
+      "tokens": 49200,
+      "durationMs": 630000,
+      "turns": 4,
+      "sessions": {
+        "s1": {
+          "title": "会话雷达插件开发",
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          },
+          "spans": [
+            [
+              1792890000000,
+              1792890120000
+            ]
+          ]
+        },
+        "s2": {
+          "title": "登录页视觉回归",
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          },
+          "spans": [
+            [
+              1792904400000,
+              1792904610000
+            ]
+          ]
+        },
+        "s4": {
+          "title": "周报自动汇总",
+          "tokens": 23800,
+          "durationMs": 300000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1-flash": 2
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 23800
+          },
+          "spans": [
+            [
+              1792918800000,
+              1792918965000
+            ],
+            [
+              1792922400000,
+              1792922535000
+            ]
+          ]
+        }
+      },
+      "calls": 8,
+      "models": {
+        "deepseek-v4.1": 2,
+        "deepseek-v4.1-flash": 5,
+        "deepseek-v4.1-pro": 1
+      },
+      "hours": {
+        "13": {
+          "tokens": 16400,
+          "durationMs": 210000,
+          "turns": 2,
+          "calls": 4,
+          "models": {
+            "deepseek-v4.1-pro": 1,
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 2
+          },
+          "sessions": {
+            "s2": {
+              "title": "登录页视觉回归",
+              "tokens": 16400,
+              "durationMs": 210000,
+              "turns": 2,
+              "calls": 4,
+              "models": {
+                "deepseek-v4.1-pro": 1,
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 2
+              },
+              "modelTokens": {
+                "deepseek-v4.1-pro": 4100,
+                "deepseek-v4.1": 4100,
+                "deepseek-v4.1-flash": 8200
+              },
+              "spans": [
+                [
+                  1792904400000,
+                  1792904610000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-pro": 4100,
+            "deepseek-v4.1": 4100,
+            "deepseek-v4.1-flash": 8200
+          }
+        },
+        "17": {
+          "tokens": 13090,
+          "durationMs": 165000,
+          "turns": 1,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s4": {
+              "title": "周报自动汇总",
+              "tokens": 13090,
+              "durationMs": 165000,
+              "turns": 1,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 13090
+              },
+              "spans": [
+                [
+                  1792918800000,
+                  1792918965000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 13090
+          }
+        },
+        "18": {
+          "tokens": 10710,
+          "durationMs": 135000,
+          "turns": 0,
+          "calls": 1,
+          "models": {
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s4": {
+              "title": "周报自动汇总",
+              "tokens": 10710,
+              "durationMs": 135000,
+              "turns": 0,
+              "calls": 1,
+              "models": {
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1-flash": 10710
+              },
+              "spans": [
+                [
+                  1792922400000,
+                  1792922535000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1-flash": 10710
+          }
+        },
+        "09": {
+          "tokens": 9000,
+          "durationMs": 120000,
+          "turns": 1,
+          "calls": 2,
+          "models": {
+            "deepseek-v4.1": 1,
+            "deepseek-v4.1-flash": 1
+          },
+          "sessions": {
+            "s1": {
+              "title": "会话雷达插件开发",
+              "tokens": 9000,
+              "durationMs": 120000,
+              "turns": 1,
+              "calls": 2,
+              "models": {
+                "deepseek-v4.1": 1,
+                "deepseek-v4.1-flash": 1
+              },
+              "modelTokens": {
+                "deepseek-v4.1": 4500,
+                "deepseek-v4.1-flash": 4500
+              },
+              "spans": [
+                [
+                  1792890000000,
+                  1792890120000
+                ]
+              ]
+            }
+          },
+          "modelTokens": {
+            "deepseek-v4.1": 4500,
+            "deepseek-v4.1-flash": 4500
+          }
+        }
+      },
+      "modelTokens": {
+        "deepseek-v4.1": 12300,
+        "deepseek-v4.1-flash": 30750,
+        "deepseek-v4.1-pro": 6150
+      },
+      "spans": [
+        [
+          1792890000000,
+          1792890120000
+        ],
+        [
+          1792904400000,
+          1792904610000
+        ],
+        [
+          1792918800000,
+          1792918965000
+        ],
+        [
+          1792922400000,
+          1792922535000
+        ]
+      ]
+    }
+  },
+  "currentId": "s1"
+}
