@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import './build-quicknav-harness.mjs';
+import { withFixtureBrowser, settle } from './browser-fixtures.mjs';
+
+await withFixtureBrowser(async ({ context }) => {
+  const page = context.pages()[0];
+  page.setDefaultTimeout(5000);
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto(pathToFileURL(path.resolve('test/quicknav-harness.html')).href);
+  await page.getByRole('button', { name: '快捷栏形式与设置', exact: true }).click();
+  await page.getByRole('button', { name: '会话卡片', exact: true }).click();
+  await settle(page);
+  const failures = [];
+  if (!(await page.locator('#dsr-qnav-panel').isVisible())) failures.push('切换到会话卡片后没有展开侧边栏');
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => {
+    const rect = document.querySelector('.dsr-qnav-trigger').getBoundingClientRect();
+    const radar = document.createElement('button');
+    radar.className = 'host-radar-obstruction';
+    radar.textContent = '雷达';
+    Object.assign(radar.style, { position: 'fixed', right: '8px', top: rect.top + 'px', width: '42px', height: '100px', zIndex: '57' });
+    document.body.append(radar);
+  });
+  await page.locator('.dsr-qnav-trigger').evaluate(el => el.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await settle(page);
+  await page.locator('#dsr-qnav-panel').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+  const rect = await page.locator('#dsr-qnav-panel').boundingBox();
+  if (!rect || rect.width < 420 || rect.height < 860 || Math.abs(rect.x + rect.width - 1440) > 2) failures.push('卡片区域不是贴右边的较宽、接近全高侧边栏：' + JSON.stringify(rect));
+  await page.keyboard.press('Escape');
+  const hit = await page.locator('.dsr-qnav-trigger').evaluate(el => {
+    const r = el.getBoundingClientRect();
+    return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+  });
+  if (!hit) failures.push('侧边唤起按钮被现有雷达入口遮挡');
+  assert.deepEqual(failures, []);
+  await page.locator('.dsr-qnav-trigger').click();
+  await page.locator('#dsr-qnav-panel').waitFor();
+  await page.locator('#dsr-qnav-panel').getByRole('button', { name: /切换到会话：Blender/ }).click();
+  assert.equal(await page.evaluate(() => window.__openedSession), 'b1');
+  assert.equal(await page.locator('#dsr-qnav-panel').count(), 0);
+  await page.evaluate(() => document.querySelector('.host-radar-obstruction').remove());
+  await page.mouse.move(1438, 180);
+  await page.locator('#dsr-qnav-panel').waitFor();
+  await page.locator('#dsr-qnav-panel').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+  await page.screenshot({ path: path.resolve('test/tmp/quicknav/cards-wide-sidebar.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await settle(page);
+  const narrow = await page.locator('#dsr-qnav-panel').boundingBox();
+  assert.ok(narrow.x >= 0 && narrow.x + narrow.width <= 391 && narrow.height > 700);
+  console.log('PASS: selecting cards opens a wide full-height sidebar; right edge and trigger remain reachable beside existing radar.');
+});

@@ -1,4 +1,4 @@
-# dsh-session-radar bundle patch
+# dsh-session-manager bundle patch
 - insert:
-    - id: session-radar
-      name: dsh-session-radar
+    - id: session-manager
+      name: dsh-session-manager

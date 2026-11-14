@@ -16,13 +16,16 @@ function stripExports(source) {
 }
 
 const core = stripExports(readFileSync(join(root, 'src', 'core.mjs'), 'utf8'));
+const quicknav = stripExports(readFileSync(join(root, 'src', 'quicknav.mjs'), 'utf8'));
+const quicknavUi = readFileSync(join(root, 'src', 'quicknav-ui.js'), 'utf8');
+const quicknavStyles = stripExports(readFileSync(join(root, 'src', 'quicknav-styles.mjs'), 'utf8'));
 const styles = stripExports(readFileSync(join(root, 'src', 'styles.mjs'), 'utf8'));
 const controller = stripExports(readFileSync(join(root, 'src', 'controller.mjs'), 'utf8'));
 const ui = readFileSync(join(root, 'src', 'ui.js'), 'utf8');
 
 const bundle = [
   'window.__ModuleLoader__.load({',
-  "  id: 'dsh-session-radar',",
+  "  id: 'dsh-session-manager',",
   '  factory: (require) => {',
   '    var module = { exports: {} };',
   '    var exports = module.exports;',
@@ -39,6 +42,8 @@ const bundle = [
   '',
   '    // ---- core -------------------------------------------------------------',
   core,
+  quicknav,
+  quicknavStyles,
   '',
   '    // ---- styles -----------------------------------------------------------',
   styles,
@@ -48,10 +53,11 @@ const bundle = [
   '',
   '    // ---- React surfaces ---------------------------------------------------',
   ui,
+  quicknavUi,
   '',
   '    exports.apply = apply;',
   '    exports.inject = inject;',
-  '    if (globalThis.__DSR_TEST__ === true) exports.__components = { Dock, SidebarPins, SidebarPinRow, QuickBar, RadarPage, DetailPanel, SessionRow, PrefsMenu, EmptyRadar, UsageView, ActivityView, PageSearchView, SearchResultsPanel, SessionCard, WorkspaceBoard, HistorySessionCard, BulkBar, SessionFlow, TurnRow, SessionTreeSection };',
+  '    if (globalThis.__DSR_TEST__ === true) exports.__components = { Dock, SidebarPins, SidebarPinRow, QuickBar, QuickNavigation, QuickNavOptions, RadarPage, DetailPanel, SessionRow, PrefsMenu, EmptyRadar, UsageView, ActivityView, PageSearchView, SearchResultsPanel, SessionCard, WorkspaceBoard, HistorySessionCard, BulkBar, SessionTreeSection, SessionTree, TreeSessionNode, TreeRoundRow, TreePanel, TreeFab, TreeComposerButton, PrefsSidebar, RadarController };',
   '    return module.exports;',
   '  },',
   '});',

@@ -1,8 +1,8 @@
 {
-  "name": "dsh-session-radar",
-  "version": "1.1.3",
+  "name": "dsh-session-manager",
+  "version": "1.3.0",
   "type": "module",
-  "description": "Session radar for DSH: right-edge quick launch bar, live session telemetry with stall and approval-wait alerts, token throughput, status filters and sort orders, workspace history and pins, a per-round conversation tree with one-line round summaries, round jumping, full-screen detail and parent/child branch navigation, plus statistics over an arbitrary custom window with range-scoped token spend, a workspaces/sessions scope picker, and wall-clock duration instead of a sum of sessions.",
+  "description": "Session radar for DSH: right-edge quick launch bar, live session telemetry with stall and approval-wait alerts, token throughput, status filters and sort orders, workspace history and pins, a per-round conversation tree that shows the user's instruction and the agent's reply on every round, forks a new branch from any round, and opens the whole tree in the right Sidebar from a configurable entry (floating, draggable, beside the composer, both or none), plus statistics over an arbitrary custom window with range-scoped token spend, a workspaces/sessions scope picker, and wall-clock duration instead of a sum of sessions.",
   "icon": "icon.svg",
   "main": "lib/index.js",
   "exports": {
@@ -51,7 +51,8 @@
   },
   "scripts": {
     "build": "node scripts/build-client.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "test:quicknav": "node scripts/build-client.mjs && node scripts/check-card-sidebar.mjs && node scripts/check-quicknav-ui.mjs"
   },
   "license": "MIT",
   "types": "lib/types/index.d.ts"

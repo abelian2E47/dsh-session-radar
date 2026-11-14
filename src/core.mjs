@@ -1,5 +1,5 @@
 /**
- * Pure telemetry and presentation helpers for dsh-session-radar.
+ * Pure telemetry and presentation helpers for dsh-session-manager.
  *
  * The module deliberately has no imports and no React: the browser entry is
  * produced by concatenating it into a single DSH client bundle, while the unit
@@ -442,7 +442,8 @@ function openTurn(telemetry, index, at) {
     lastSeq: 0,
     chain: [],
   };
-  telemetry.turns = [...telemetry.turns, turn].slice(-MAX_TURNS);
+  telemetry.turns.push(turn);
+  if (telemetry.fullHistory !== true && telemetry.turns.length > MAX_TURNS) telemetry.turns = telemetry.turns.slice(-MAX_TURNS);
   return turn;
 }
 
@@ -626,8 +627,8 @@ export function reduceEvent(telemetry, input) {
       if (messageTokens > 0) messageTurn.modelTokens[modelName] = (Number(messageTurn.modelTokens[modelName]) || 0) + messageTokens;
       if (messageTurn.model === undefined || messageTurn.model === '') messageTurn.model = modelName;
       if (messageTokens > 0) messageTurn.tokens += messageTokens;
-      if (hasText) messageTurn.text = truncate(fullText, MAX_TURN_TEXT);
-      if (fullReasoning !== '') messageTurn.reasoning = truncate(fullReasoning, MAX_TURN_REASONING);
+      if (hasText) messageTurn.text = telemetry.fullHistory === true ? fullText : truncate(fullText, MAX_TURN_TEXT);
+      if (fullReasoning !== '') messageTurn.reasoning = telemetry.fullHistory === true ? fullReasoning : truncate(fullReasoning, MAX_TURN_REASONING);
       break;
     }
     case 'tool/call':
@@ -786,7 +787,7 @@ export function reduceEvent(telemetry, input) {
         const text = data.content.map(part => part?.text || '').join(' ').trim();
         if (text !== '') {
           telemetry.lastPrompt = truncate(text, 260);
-          ensureTurn(telemetry, time).prompt = truncate(text, MAX_TURN_PROMPT);
+          ensureTurn(telemetry, time).prompt = telemetry.fullHistory === true ? text : truncate(text, MAX_TURN_PROMPT);
         }
       }
       break;
@@ -2102,6 +2103,170 @@ export function sessionTree(entries, id, options = {}) {
   };
   walk(rootId, 0);
   return { rootId, currentId, rows, total: rows.length, collapsed };
+}
+
+/**
+ * Which round of a session a fork cut belongs to: the round whose log span
+ * contains the cut seq, or 0 when the rounds are not loaded or the cut is
+ * unknown. The branch tree hangs a child session under the round it was cut
+ * from, so this is what turns a flat lineage into a conversation tree.
+ */
+export function roundIndexForSeq(turns, atSeq) {
+  const seq = Number(atSeq) || 0;
+  const list = Array.isArray(turns) ? turns : [];
+  if (seq <= 0 || list.length === 0) return 0;
+  for (const turn of list) {
+    if (!isRecord(turn)) continue;
+    const last = Number(turn.lastSeq) || 0;
+    if (last > 0 && last >= seq) return Number(turn.index) || 0;
+  }
+  return 0;
+}
+
+/**
+ * One session's place in the branch forest, nested.
+ *
+ * The link a branch was cut from is not in DSH's own session summary: an
+ * ordinary fork records no source session, only an inherited event prefix. The
+ * records this plugin keeps when it cuts a branch carry that link, subagents
+ * keep DSH's parentage, and older rows may still carry a lineage projection, so
+ * every one of those is consulted before a row is treated as its own root.
+ */
+export function branchForest(entries, branches, currentId) {
+  const list = (Array.isArray(entries) ? entries : [])
+    .filter(entry => isRecord(entry) && typeof entry.id === 'string' && entry.id !== '');
+  const byId = new Map();
+  for (const entry of list) if (!byId.has(entry.id)) byId.set(entry.id, entry);
+  const records = isRecord(branches) ? branches : {};
+  const recordOf = function (id) {
+    const record = records[id];
+    return isRecord(record) ? record : null;
+  };
+  const parentOf = function (entry) {
+    const record = recordOf(entry.id);
+    const candidates = [record ? record.parentId : '', entry.parentId, entry.forkSource, forkSourceOf(entry)];
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string' || candidate === '' || candidate === entry.id) continue;
+      if (byId.has(candidate)) return candidate;
+    }
+    return '';
+  };
+  const current = typeof currentId === 'string' ? currentId : '';
+  const empty = { rootId: '', currentId: current, root: null, path: [], total: 0, forks: 0, subagents: 0 };
+  if (!byId.has(current)) {
+    // A session the panel was opened for can still be its own single root while
+    // its row is missing from the catalog; nothing else can be placed without it.
+    return empty;
+  }
+  let rootId = current;
+  const climbed = new Set();
+  let cursor = byId.get(current);
+  while (cursor !== undefined) {
+    if (climbed.has(cursor.id)) break;
+    climbed.add(cursor.id);
+    const parent = parentOf(cursor);
+    if (parent === '') break;
+    rootId = parent;
+    cursor = byId.get(parent);
+  }
+  const children = new Map();
+  for (const entry of byId.values()) {
+    const parent = parentOf(entry);
+    if (parent === '') continue;
+    const bucket = children.get(parent);
+    if (bucket === undefined) children.set(parent, [entry]);
+    else bucket.push(entry);
+  }
+  for (const bucket of children.values()) {
+    bucket.sort(function (left, right) {
+      const leftSeq = Number(recordOf(left.id)?.atSeq) || 0;
+      const rightSeq = Number(recordOf(right.id)?.atSeq) || 0;
+      // Branches stay in the order of the rounds they were cut from; a branch
+      // without a recorded cut falls to the end, newest activity first.
+      if (leftSeq > 0 && rightSeq > 0 && leftSeq !== rightSeq) return leftSeq - rightSeq;
+      if (leftSeq > 0 && rightSeq === 0) return -1;
+      if (leftSeq === 0 && rightSeq > 0) return 1;
+      return (Number(right.updatedAt) || 0) - (Number(left.updatedAt) || 0) || String(left.id).localeCompare(String(right.id));
+    });
+  }
+  const seen = new Set();
+  let total = 0;
+  let forks = 0;
+  let subagents = 0;
+  const build = function (id, depth) {
+    const entry = byId.get(id);
+    if (entry === undefined || seen.has(id)) return null;
+    seen.add(id);
+    total += 1;
+    const kind = id === rootId ? 'root' : entry.origin === 'subagent' ? 'subagent' : 'fork';
+    if (kind === 'fork') forks += 1;
+    else if (kind === 'subagent') subagents += 1;
+    const record = recordOf(id);
+    const kids = [];
+    for (const kid of children.get(id) || []) {
+      const node = build(kid.id, depth + 1);
+      if (node !== null) kids.push(node);
+    }
+    return {
+      id,
+      entry,
+      kind,
+      depth,
+      current: id === current,
+      record,
+      atSeq: record ? Number(record.atSeq) || 0 : 0,
+      turnIndex: record ? Number(record.turnIndex) || 0 : 0,
+      title: String(entry.title || entry.displayTitle || entry.id || ''),
+      children: kids,
+    };
+  };
+  const root = build(rootId, 0);
+  const path = [];
+  const search = function (node) {
+    if (node === null) return false;
+    path.push(node.id);
+    if (node.current === true) return true;
+    for (const kid of node.children) if (search(kid)) return true;
+    path.pop();
+    return false;
+  };
+  search(root);
+  return { rootId, currentId: current, root, path, total, forks, subagents };
+}
+
+/** Depth-first ids of one subtree, the node itself first. */
+export function branchSubtreeIds(node, out = []) {
+  if (!isRecord(node) || typeof node.id !== 'string') return out;
+  out.push(node.id);
+  for (const kid of Array.isArray(node.children) ? node.children : []) branchSubtreeIds(kid, out);
+  return out;
+}
+
+/** The node with this id anywhere in the forest, or null. */
+export function branchFindNode(node, id) {
+  if (!isRecord(node)) return null;
+  if (node.id === id) return node;
+  for (const kid of Array.isArray(node.children) ? node.children : []) {
+    const found = branchFindNode(kid, id);
+    if (found !== null) return found;
+  }
+  return null;
+}
+
+/** How much a subtree holds, in the words the delete confirmation uses. */
+export function branchSubtreeSize(node, roundsOf) {
+  const ids = branchSubtreeIds(node);
+  let rounds = 0;
+  let running = 0;
+  const walk = function (item) {
+    if (!isRecord(item)) return;
+    const rounds_ = typeof roundsOf === 'function' ? roundsOf(item.id) : null;
+    rounds += Array.isArray(rounds_) ? rounds_.length : 0;
+    if (item.entry && item.entry.running === true) running += 1;
+    for (const kid of Array.isArray(item.children) ? item.children : []) walk(kid);
+  };
+  walk(node);
+  return { sessions: ids.length, rounds, running };
 }
 
 const TURN_STATE_TEXT = { done: '已完成', running: '进行中', open: '已中断', error: '有失败' };

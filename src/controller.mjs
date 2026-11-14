@@ -13,14 +13,25 @@ const STORAGE_KEYS = {
   unread: 'dsh.sessionRadar.v1.unread',
   prefs: 'dsh.sessionRadar.v1.prefs',
   activity: 'dsh.sessionRadar.v1.activity',
+  branches: 'dsh.sessionRadar.v1.branches',
 };
 
 const CARD_TEXTURE_VALUES = new Set(['none', 'paper', 'dots', 'glass']);
+/** Where the tree's entry button lives: floating, beside the composer, both, or nowhere. */
+const TREE_ENTRY_VALUES = new Set(['float', 'composer', 'both', 'none']);
 const ACTIVITY_MODE_VALUES = new Set(['today', 'day', 'week', 'month', 'custom']);
 const ACTIVITY_GRAIN_VALUES = new Set(['hour', 'day', 'week', 'month']);
 const DAY_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/** The right-Sidebar tab type the conversation tree opens as. */
+const TREE_TAB_KIND = 'session-tree';
+/** Implementation id the tab body and its chip title register under. */
+const TREE_TAB_ID = 'dsh-session-manager.tree';
+/** Message budget per history page; the tree reads until history is exhausted. */
+const ROUND_PAGE_SIZE = 400;
+
 const DEFAULT_PREFS = {
+  ...QUICK_NAV_DEFAULTS,
   showRail: true,
   includeSubagents: true,
   compact: false,
@@ -34,6 +45,9 @@ const DEFAULT_PREFS = {
   sidebarPinsOpen: true,
   quickBarPos: null,
   railPos: null,
+  treeEntry: 'float',
+  treeFabYield: true,
+  treeFabPos: null,
   activityRange: { mode: 'today', from: '', to: '', grain: 'day', timeMode: 'busy' },
   activityScope: { workspaces: [], sessions: [] },
 };
@@ -102,6 +116,8 @@ function loadPrefs() {
   const value = readStoredJson(globalThis.localStorage, STORAGE_KEYS.prefs, {});
   const prefs = { ...DEFAULT_PREFS, ...(isRecord(value) ? value : {}) };
   if (!CARD_TEXTURE_VALUES.has(prefs.cardTexture)) prefs.cardTexture = DEFAULT_PREFS.cardTexture;
+  if (!TREE_ENTRY_VALUES.has(prefs.treeEntry)) prefs.treeEntry = DEFAULT_PREFS.treeEntry;
+  for (const key of Object.keys(QUICK_NAV_DEFAULTS)) prefs[key] = normalizeQuickNavPref(key, prefs[key]);
   prefs.activityRange = normalizeActivityRange(prefs.activityRange);
   prefs.activityScope = normalizeActivityScope(prefs.activityScope);
   prefs.stallMinutes = normalizeStallMinutes(prefs.stallMinutes);
@@ -115,6 +131,36 @@ function loadUnread() {
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   for (const [id, at] of Object.entries(value)) {
     if (typeof id === 'string' && Number(at) > cutoff) out[id] = Number(at);
+  }
+  return out;
+}
+
+
+/**
+ * The branch records this plugin keeps for the forks it cut.
+ *
+ * DSH's own session summary carries no source for an ordinary fork — the child
+ * only inherits an event prefix — so the link from a branch back to the round it
+ * was cut from is kept here, browser-side, and read back by the session tree.
+ */
+function loadBranches() {
+  const value = readStoredJson(globalThis.localStorage, STORAGE_KEYS.branches, {});
+  if (!isRecord(value)) return {};
+  const out = {};
+  const cutoff = Date.now() - 180 * 24 * 60 * 60 * 1000;
+  for (const [id, record] of Object.entries(value)) {
+    if (typeof id !== 'string' || id === '' || !isRecord(record)) continue;
+    const parentId = typeof record.parentId === 'string' ? record.parentId : '';
+    if (parentId === '' || parentId === id) continue;
+    const at = Number(record.at) || 0;
+    if (at > 0 && at < cutoff) continue;
+    out[id] = {
+      parentId,
+      atSeq: Math.max(0, Number(record.atSeq) || 0),
+      turnIndex: Math.max(0, Number(record.turnIndex) || 0),
+      at,
+      title: typeof record.title === 'string' ? record.title.slice(0, 200) : '',
+    };
   }
   return out;
 }
@@ -244,6 +290,11 @@ export class RadarController {
     this.unread = loadUnread();
     this.prefs = loadPrefs();
     this.activity = loadActivity();
+    this.branches = loadBranches();
+    this.treeRounds = new Map();
+    this.treeLoading = new Map();
+    this.treeBusy = false;
+    this.treeNotice = null;
     this.activityLastPersist = 0;
     this.activityDirty = false;
     this.historyLoaded = new Set();
@@ -270,6 +321,7 @@ export class RadarController {
       prefsOpen: false,
       detailFull: false,
       fork: { status: 'idle', sessionId: '', atSeq: 0, childId: '', error: '' },
+      tree: { sessionId: '', waiting: [] },
       bulk: { status: 'idle', action: null, message: '', error: '', ids: [] },
     };
     this.lastRunning = new Map();
@@ -370,6 +422,18 @@ export class RadarController {
     return '未分组';
   }
 
+  workspaceKeyFor(row) {
+    const seen = new Set();
+    while (row && !seen.has(row.id)) {
+      seen.add(row.id);
+      const workspace = this.workspaceItems.find(item => Array.isArray(item.sessionIds) && item.sessionIds.includes(row.id));
+      if (workspace) return workspace.id || workspace.path || this.workspaceFor(row);
+      if (row.cwd) return row.cwd;
+      row = this.rows.get(row.parentId);
+    }
+    return 'ungrouped';
+  }
+
   currentMainId() {
     for (const row of this.rows.values()) {
       if ((row.retainedBy?.mainView ?? 0) > 0) return row.id;
@@ -438,6 +502,7 @@ export class RadarController {
       this.lastRunning.set(id, row.running === true);
     }
     this.ensureRecentMetadata();
+    this.pruneBranches();
     this.publishSoon();
   }
 
@@ -850,7 +915,7 @@ export class RadarController {
     this.ui.prefsOpen = false;
     this.ui.open = false;
     this.publish();
-    try { this.ctx.layout.selectPanel('session-radar'); } catch (error) {
+    try { this.ctx.layout.selectPanel('session-manager'); } catch (error) {
       this.error = error instanceof Error ? error.message : String(error);
       this.publish();
     }
@@ -1228,18 +1293,7 @@ export class RadarController {
     this.ui.bulk = { status: 'busy', action: 'delete', message: '正在永久删除 ' + targets.length + ' 个归档会话…', error: '', ids: targets };
     this.publishSoon();
     try {
-      const response = await globalThis.fetch('/api/session-radar.delete', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ids: targets }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload && typeof payload.error === 'string' ? payload.error : '永久删除失败（HTTP ' + response.status + '）');
-      }
-      const deleted = Array.isArray(payload.deleted) ? payload.deleted.filter(id => typeof id === 'string') : [];
-      const failed = Array.isArray(payload.failed) ? payload.failed : [];
+      const { deleted, failed } = await this.requestDelete(targets);
       for (const id of deleted) {
         this.workspaceArchived.delete(id);
         this.pins.delete(id);
@@ -1289,10 +1343,12 @@ export class RadarController {
     if (!Object.hasOwn(DEFAULT_PREFS, key)) return;
     if (key === 'defaultRange' && !['today', '7d', '30d', 'all'].includes(String(value))) return;
     if (key === 'cardTexture' && !CARD_TEXTURE_VALUES.has(String(value))) return;
+    if (key === 'treeEntry' && !TREE_ENTRY_VALUES.has(String(value))) return;
+    if (Object.hasOwn(QUICK_NAV_DEFAULTS, key)) value = normalizeQuickNavPref(key, value);
     if (key === 'stallMinutes') value = normalizeStallMinutes(value);
     if (key === 'activityRange') value = normalizeActivityRange(value);
     if (key === 'activityScope') value = normalizeActivityScope(value);
-    if (key === 'quickBarPos' || key === 'railPos') {
+    if (key === 'quickBarPos' || key === 'railPos' || key === 'treeFabPos' || key === 'quickNavIconPos') {
       const pos = isRecord(value) ? value : null;
       value = pos && Number.isFinite(Number(pos.x)) && Number.isFinite(Number(pos.y))
         ? { x: Math.round(Number(pos.x)), y: Math.round(Number(pos.y)) }
@@ -1347,7 +1403,7 @@ export class RadarController {
   openOverview() {
     this.ui.open = false;
     this.publish();
-    try { this.ctx.layout.selectPanel('session-radar'); } catch (error) {
+    try { this.ctx.layout.selectPanel('session-manager'); } catch (error) {
       this.error = error instanceof Error ? error.message : String(error);
       this.publish();
     }
@@ -1384,6 +1440,9 @@ export class RadarController {
     try {
       const childId = await this.sessions.fork({ sessionId: id, atSeq: seq, increaseTitle: true });
       const child = String(childId || '');
+      // DSH records no source for an ordinary fork, so the round it was cut from
+      // only survives if it is kept here; that is what the tree hangs it on.
+      this.noteBranch(child, id, seq, Number(turnIndex) || 0);
       this.ui.fork = { status: 'done', sessionId: id, atSeq: seq, childId: child, error: '', turn: Number(turnIndex) || 0 };
       // Stay on the source session: the new branch shows up in its tree, and the
       // notice offers the jump, so the reader keeps the context they forked from.
@@ -1410,6 +1469,403 @@ export class RadarController {
   clearForkNotice() {
     this.ui.fork = { status: 'idle', sessionId: '', atSeq: 0, childId: '', error: '' };
     this.publish();
+  }
+
+  // ---- conversation tree -------------------------------------------------
+  // One right-Sidebar surface per session: every round of the session on
+  // screen, the branch each fork was cut from, and the actions that create or
+  // remove a branch. Forks are cut with the same host primitive the radar's own
+  // round action uses; what is added here is the tree that makes them visible
+  // and navigable from inside the conversation itself.
+
+  /** The on-screen session the tree should speak for. */
+  treeFocusedSession() {
+    const sidebar = this.treeSidebar();
+    const mounted = sidebar && sidebar.mounted !== undefined ? sidebar.mounted.getSnapshot?.() : undefined;
+    if (typeof mounted === 'string' && mounted !== '') return mounted;
+    const main = this.currentMainId();
+    return typeof main === 'string' ? main : '';
+  }
+
+  treeSidebar() {
+    return typeof this.ctx.get === 'function' ? this.ctx.get('sidebarRight') : undefined;
+  }
+
+  /** The tree tab open in one session, if any. */
+  treeTab(sessionId) {
+    const sidebar = this.treeSidebar();
+    if (sidebar === undefined || typeof sidebar.tabsIn !== 'function') return undefined;
+    let tabs = [];
+    try { tabs = sidebar.tabsIn(sessionId) || []; } catch { tabs = []; }
+    return tabs.find(tab => tab !== undefined && tab !== null && tab.kind === TREE_TAB_KIND);
+  }
+
+  /** Whether this session is showing the tree right now. */
+  treePanelOpen(sessionId) {
+    const sidebar = this.treeSidebar();
+    if (sidebar === undefined) return false;
+    const tab = this.treeTab(sessionId);
+    if (tab === undefined) return false;
+    if (typeof sidebar.isExpanded === 'function' && sidebar.isExpanded() !== true) return false;
+    const active = typeof sidebar.active === 'function' ? sidebar.active() : undefined;
+    return active === undefined || active.id === tab.id;
+  }
+
+  /**
+   * Open the tree in a session, or hide it when it is already in front. The tab
+   * type is registered by the browser half; a host without the right Sidebar
+   * simply reports that nothing happened.
+   */
+  toggleTreeSidebar(sessionId) {
+    const id = typeof sessionId === 'string' && sessionId !== '' ? sessionId : this.treeFocusedSession();
+    const sidebar = this.treeSidebar();
+    if (sidebar === undefined) {
+      // Without the right Sidebar there is no seat for the panel; say so where
+      // the radar can be read instead of failing silently.
+      this.error = '当前宿主没有右侧栏服务，会话树面板打不开';
+      this.setTreeNotice('error', this.error);
+      return false;
+    }
+    if (id === '') {
+      this.setTreeNotice('error', '还没有选中的会话，先打开一个会话再开会话树');
+      return false;
+    }
+    try {
+      const tab = this.treeTab(id);
+      if (tab !== undefined) {
+        if (this.treePanelOpen(id)) { sidebar.hide(tab.id); return false; }
+        sidebar.focus(tab.id);
+        if (typeof sidebar.isExpanded === 'function' && sidebar.isExpanded() !== true) sidebar.toggleExpanded();
+        return true;
+      }
+      sidebar.openTabIn(id, TREE_TAB_KIND);
+      return true;
+    } catch (error) {
+      this.error = '打开会话树失败：' + (error instanceof Error ? error.message : String(error));
+      this.publish();
+      return false;
+    }
+  }
+
+  /**
+   * Follow a branch: switch the app to that session and put the tree in front
+   * there too, so walking the tree does not keep costing a second click. The
+   * new session's tab layout is adopted once it is on screen, so the open is
+   * retried briefly instead of racing that adoption.
+   */
+  openTreeIn(sessionId) {
+    const target = typeof sessionId === 'string' ? sessionId : '';
+    if (target === '') return false;
+    const sidebar = this.treeSidebar();
+    this.openSession(target);
+    if (sidebar === undefined) return false;
+    let tries = 0;
+    const attempt = () => {
+      if (this.disposed || tries >= 8) return;
+      tries += 1;
+      try {
+        const tab = this.treeTab(target);
+        if (tab !== undefined) {
+          sidebar.focus(tab.id);
+          if (typeof sidebar.isExpanded === 'function' && sidebar.isExpanded() !== true) sidebar.toggleExpanded();
+          return;
+        }
+        if (this.treeFocusedSession() === target) sidebar.openTabIn(target, TREE_TAB_KIND);
+      } catch { /* adoption may still be in flight */ }
+      setTimeout(attempt, 180);
+    };
+    setTimeout(attempt, 120);
+    return true;
+  }
+
+  /** Remember which session and round a branch was cut from. */
+  noteBranch(childId, parentId, atSeq, turnIndex) {
+    const child = typeof childId === 'string' ? childId : '';
+    const parent = typeof parentId === 'string' ? parentId : '';
+    if (child === '' || parent === '' || child === parent) return;
+    const parentEntry = this.telemetry.get(parent);
+    this.branches[child] = {
+      parentId: parent,
+      atSeq: Math.max(0, Number(atSeq) || 0),
+      turnIndex: Math.max(0, Number(turnIndex) || 0),
+      at: Date.now(),
+      title: parentEntry !== undefined && typeof parentEntry.title === 'string' ? parentEntry.title.slice(0, 200) : '',
+    };
+    this.persistBranches();
+    this.publishSoon();
+  }
+
+  persistBranches() {
+    writeStoredJson(globalThis.localStorage, STORAGE_KEYS.branches, this.branches);
+  }
+
+  /** Drop records whose sessions the catalog no longer lists, once they are stale. */
+  pruneBranches() {
+    const live = new Set(this.rows.keys());
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let changed = false;
+    for (const [childId, record] of Object.entries(this.branches)) {
+      if (live.has(childId)) continue;
+      if (live.has(record.parentId)) continue;
+      if ((Number(record.at) || 0) >= cutoff) continue;
+      delete this.branches[childId];
+      changed = true;
+    }
+    if (changed) this.persistBranches();
+  }
+
+  forgetBranches(ids) {
+    let changed = false;
+    for (const id of Array.isArray(ids) ? ids : []) {
+      if (Object.hasOwn(this.branches, id)) { delete this.branches[id]; changed = true; }
+    }
+    if (changed) this.persistBranches();
+  }
+
+  setTreeNotice(kind, text) {
+    this.treeNotice = kind === null ? null : { kind, text: String(text || ''), at: Date.now() };
+    this.publish();
+  }
+
+  clearTreeNotice() {
+    if (this.treeNotice === null) return;
+    this.treeNotice = null;
+    this.publish();
+  }
+
+  /** Rounds read for the tree, one entry per session, status included. */
+  treeRoundsFor(id) {
+    return this.treeRounds.get(id) || null;
+  }
+
+  /**
+   * Make sure the tree has this session's rounds. A ready read is reused unless
+   * `force` asks for a fresh one; concurrent asks share one read.
+   */
+  ensureRounds(id, options = {}) {
+    if (this.disposed || typeof id !== 'string' || id === '') return null;
+    const existing = this.treeRounds.get(id);
+    if (existing !== undefined && existing.status === 'ready' && options.force !== true) return existing;
+    const inFlight = this.treeLoading.get(id);
+    if (inFlight !== undefined) return inFlight;
+    this.treeRounds.set(id, {
+      status: 'loading',
+      turns: existing !== undefined && Array.isArray(existing.turns) ? existing.turns : [],
+      error: '',
+      telemetry: existing !== undefined ? existing.telemetry || null : null,
+      at: Date.now(),
+    });
+    this.publishSoon();
+    const job = this.readRounds(id).catch(error => {
+      const failed = {
+        status: 'error',
+        turns: [],
+        error: error instanceof Error ? error.message : String(error),
+        telemetry: null,
+        at: Date.now(),
+      };
+      this.treeRounds.set(id, failed);
+      return failed;
+    }).then(result => {
+      this.treeLoading.delete(id);
+      this.publishSoon();
+      return result;
+    });
+    this.treeLoading.set(id, job);
+    return job;
+  }
+
+  /**
+   * Read one session's rounds from the oldest page forward.
+   *
+   * Session history is paged backwards from the newest message, so a single
+   * request only ever carries the tail of a long session. The tree needs every
+   * round the user might branch from, so it walks the pages until the log runs
+   * out, then reduces the merged log in one pass into a telemetry of
+   * its own — the live telemetry of a watched session only accepts increasing
+   * seqs and could never take an older page.
+   */
+  async readRounds(id) {
+    const row = this.rows.get(id);
+    if (row === undefined) throw new Error('这个会话不在当前列表里');
+    const records = [];
+    let beforeSeq;
+    while (!this.disposed) {
+      const request = { address: this.addressFor(id), maxMessages: ROUND_PAGE_SIZE };
+      if (beforeSeq !== undefined) request.beforeSeq = beforeSeq;
+      const result = await this.remote.session.events(request, this.lifetime.signal);
+      if (result?.ok !== true) throw new Error(result?.error?.message || '读取轮次失败');
+      const pageRecords = Array.isArray(result.value?.records) ? result.value.records : [];
+      records.push(...pageRecords);
+      let oldest = 0;
+      for (const record of pageRecords) {
+        const event = isRecord(record) && isRecord(record.event) ? record.event : record;
+        const seq = isRecord(event) ? Number(event.seq) : NaN;
+        if (Number.isFinite(seq) && (oldest === 0 || seq < oldest)) oldest = seq;
+      }
+      if (result.value?.hasMore !== true || pageRecords.length === 0 || !(oldest > 0)) break;
+      if (beforeSeq !== undefined && oldest >= beforeSeq) throw new Error('历史分页没有前进，请重新读取');
+      beforeSeq = oldest;
+    }
+    if (this.disposed) throw new Error('插件已卸载');
+    const seqOf = record => {
+      const event = isRecord(record) && isRecord(record.event) ? record.event : record;
+      const seq = isRecord(event) ? Number(event.seq) : NaN;
+      return Number.isFinite(seq) ? seq : 0;
+    };
+    records.sort((left, right) => seqOf(left) - seqOf(right));
+    const telemetry = createTelemetry(row);
+    telemetry.fullHistory = true;
+    reduceEvents(telemetry, records);
+    const view = {
+      status: 'ready',
+      turns: buildTurnViews(telemetry, Date.now()),
+      error: '',
+      telemetry,
+      at: Date.now(),
+      truncated: false,
+    };
+    this.treeRounds.set(id, view);
+    return view;
+  }
+
+  /**
+   * Cheap tail refresh for a session that is still running: the newest page is
+   * merged into the rounds already read instead of re-reading the whole log.
+   */
+  async refreshRounds(id) {
+    if (this.disposed) return null;
+    const cached = this.treeRounds.get(id);
+    if (cached === undefined || cached.status !== 'ready' || cached.telemetry === null || cached.telemetry === undefined) {
+      return this.ensureRounds(id, { force: true });
+    }
+    try {
+      const result = await this.remote.session.events({ address: this.addressFor(id), maxMessages: 200 }, this.lifetime.signal);
+      if (result?.ok !== true || result.value === undefined) return cached;
+      const records = Array.isArray(result.value.records) ? result.value.records.slice() : [];
+      const seqOf = record => {
+        const event = isRecord(record) && isRecord(record.event) ? record.event : record;
+        const seq = isRecord(event) ? Number(event.seq) : NaN;
+        return Number.isFinite(seq) ? seq : 0;
+      };
+      records.sort((left, right) => seqOf(left) - seqOf(right));
+      // A busy session can add more than one tail page between refreshes.
+      // Re-read the complete log if this page no longer reaches the last read.
+      if (result.value.hasMore === true && records.length > 0 && seqOf(records[0]) > cached.telemetry.lastSeq) {
+        return this.ensureRounds(id, { force: true });
+      }
+      cached.telemetry.running = this.rows.get(id)?.running === true;
+      reduceEvents(cached.telemetry, records);
+      const next = {
+        status: 'ready',
+        turns: buildTurnViews(cached.telemetry, Date.now()),
+        error: '',
+        telemetry: cached.telemetry,
+        at: Date.now(),
+        truncated: cached.truncated === true,
+      };
+      this.treeRounds.set(id, next);
+      this.publishSoon();
+      return next;
+    } catch {
+      return cached;
+    }
+  }
+
+  /**
+   * Delete one branch and everything under it.
+   *
+   * DSH's persistence seam has no delete of its own, so a branch is archived
+   * first (which also stops whatever is still running in it) and then removed
+   * through the maintenance route the host half exposes. The session the app is
+   * sitting on is left before its log goes away, and the root is never a target.
+   */
+  async deleteBranch(id) {
+    const target = typeof id === 'string' ? id : '';
+    if (target === '' || this.treeBusy) return false;
+    const snapshot = this.getSnapshot();
+    const entries = snapshot.entries.concat(snapshot.archivedEntries || []);
+    const forest = branchForest(entries, this.branches, target);
+    const node = branchFindNode(forest.root, target);
+    if (node === null) {
+      this.setTreeNotice('error', '这一支已经不在会话列表里了');
+      return false;
+    }
+    if (node.kind === 'root') {
+      this.setTreeNotice('error', '根会话不能从这里删除：只能删它下面的分支');
+      return false;
+    }
+    const ids = branchSubtreeIds(node);
+    const size = branchSubtreeSize(node, key => {
+      const rounds = this.treeRounds.get(key);
+      return rounds !== undefined && Array.isArray(rounds.turns) ? rounds.turns : null;
+    });
+    if (size.running > 0) {
+      this.setTreeNotice('error', '这一支里还有正在运行的会话，先停掉它再删除');
+      return false;
+    }
+    this.treeBusy = true;
+    this.setTreeNotice('busy', '正在删除 ' + ids.length + ' 个会话…');
+    try {
+      const current = this.currentMainId();
+      if (typeof current === 'string' && ids.includes(current)) {
+        const parent = node.record !== null && typeof node.record.parentId === 'string' ? node.record.parentId : forest.rootId;
+        if (parent !== '' && !ids.includes(parent)) this.openSession(parent);
+      }
+      for (const key of ids) {
+        try { await this.workspaces.archiveSession(key, { stopActivity: true }); } catch { /* already archived, or gone */ }
+      }
+      this.syncWorkspaces();
+      const result = await this.requestDelete(ids);
+      for (const key of result.deleted) {
+        this.stopWatch(key);
+        this.telemetry.delete(key);
+        this.metaAt.delete(key);
+        this.metaInFlight.delete(key);
+        this.treeRounds.delete(key);
+        this.treeLoading.delete(key);
+        this.pins.delete(key);
+        delete this.unread[key];
+        if (this.ui.selectedId === key) this.ui.selectedId = null;
+      }
+      this.forgetBranches(result.deleted);
+      this.persistPins();
+      this.persistUnread();
+      this.removeActivityFor(result.deleted);
+      this.syncWorkspaces();
+      await Promise.resolve(this.sessions.refresh?.()).catch(() => {});
+      this.treeBusy = false;
+      if (result.failed.length > 0 && result.deleted.length === 0) {
+        const first = result.failed[0];
+        this.setTreeNotice('error', first && first.error ? String(first.error) : '删除失败');
+        return false;
+      }
+      this.setTreeNotice('done', '已删除 ' + result.deleted.length + ' 个会话' + (result.failed.length > 0 ? '，' + result.failed.length + ' 个失败' : ''));
+      return result.failed.length === 0;
+    } catch (error) {
+      this.treeBusy = false;
+      this.setTreeNotice('error', error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  /** Ask the host half to remove archived session logs for good. */
+  async requestDelete(ids) {
+    if (typeof globalThis.fetch !== 'function') throw new Error('当前环境没有可用的网络接口');
+    const targets = (Array.isArray(ids) ? ids : []).filter(id => typeof id === 'string' && id !== '');
+    if (targets.length === 0) return { deleted: [], failed: [] };
+    const response = await globalThis.fetch('/api/session-manager.delete', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ids: targets }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload && typeof payload.error === 'string' ? payload.error : '删除失败（HTTP ' + response.status + '）');
+    return {
+      deleted: Array.isArray(payload.deleted) ? payload.deleted.filter(id => typeof id === 'string') : [],
+      failed: Array.isArray(payload.failed) ? payload.failed : [],
+    };
   }
 
   async rename(id, title) {
@@ -1497,6 +1953,7 @@ export class RadarController {
       const telemetry = this.telemetry.get(row.id);
       if (telemetry === undefined) continue;
       const entry = deriveEntry(row, telemetry, { now, workspace: this.workspaceFor(row), stallAfterMs: this.stallAfterMs() });
+      entry.workspaceId = this.workspaceKeyFor(row);
       entry.pinned = this.pins.has(row.id);
       entry.unread = telemetry.unread === true;
       entry.archived = this.workspaceArchived.has(row.id);
@@ -1576,6 +2033,16 @@ export class RadarController {
       lastAction: null,
       lastText: '',
     }).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const treeRounds = {};
+    for (const [id, rounds] of this.treeRounds) {
+      treeRounds[id] = {
+        status: rounds.status,
+        turns: Array.isArray(rounds.turns) ? rounds.turns : [],
+        error: rounds.error || '',
+        truncated: rounds.truncated === true,
+        at: Number(rounds.at) || 0,
+      };
+    }
     const counts = computeCounts(entries);
     counts.workspaces = workspaceGroups.length;
     counts.workspacePinned = workspaceGroups.filter(workspace => workspace.pinned === true).length;
@@ -1592,6 +2059,13 @@ export class RadarController {
       currentId: this.currentMainId() || null,
       prefs: { ...this.prefs },
       fork: { ...this.ui.fork },
+      branches: { ...this.branches },
+      tree: {
+        sessionId: this.ui.tree.sessionId,
+        busy: this.treeBusy === true,
+        notice: this.treeNotice === null || this.treeNotice === undefined ? null : { ...this.treeNotice },
+        rounds: treeRounds,
+      },
       detailFull: this.ui.detailFull === true,
       canFork: this.canFork(),
       stallAfterMs: this.stallAfterMs(),

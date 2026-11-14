@@ -7,3 +7,5 @@ test/*.png
 %SystemDrive%/
 *.db
 test/demo.html
+test/quicknav-harness.html
+outputs/
